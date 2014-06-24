@@ -3,20 +3,44 @@
 
 
 simple_test() ->
-    TAddress = {table, "address"},
-    TUser = {table, "user", [{has_one, TAddress}]},
+    TUser = {table, "user"},
+    Select1 = {select, TUser, []},
+    ?assertEqual(<<"SELECT * FROM user">>, erma:build(Select1)),
 
-    Select = {select, TUser,
+    Select2 = {select, TUser,
+              [{where, [{"email", "some@where.com"}]}]},
+    ?assertEqual(<<"SELECT * FROM user WHERE email = 'some@where.com'">>,
+                 erma:build(Select2)),
+
+    Select3 = {select, TUser,
+               [{fields, ["first_name", "last_name", "address.state"]},
+                {where, [{"email", "some@where.com"}]}
+              ]},
+    ?assertEqual(<<"SELECT first_name, last_name, address.state ",
+                   "FROM user ",
+                   "WHERE email = 'some@where.com'">>,
+                 erma:build(Select3)),
+
+    TAddress = {table, "address"},
+    Select4 = {select, TUser,
+              [{with, [TAddress]},
+               {fields, ["first_name", "last_name", "address.state"]}
+              ]},
+    ?assertEqual(<<"SELECT first_name, last_name, address.state ",
+                   "FROM user ",
+                   "LEFT JOIN address ON address.id = user.address_id">>,
+                 erma:build(Select4)),
+    Select5 = {select, TUser,
               [{with, [TAddress]},
                {fields, ["first_name", "last_name", "address.state"]},
                {where, [{"email", "some@where.com"}]}
               ]},
 
-    ?assertEqual(<<"SELECT first_name, last_name, address.state",
+    ?assertEqual(<<"SELECT first_name, last_name, address.state ",
                    "FROM user ",
-                   "LEFT JOIN address ON user.address_id = address.id ",
+                   "LEFT JOIN address ON address.id = user.address_id ",
                    "WHERE email = 'some@where.com'">>,
-                 erma:build(Select)),
+                 erma:build(Select5)),
     ok.
 
 
@@ -25,7 +49,7 @@ append_test() ->
                [{fields, ["id", "username"]},
                 {where, [{"email", like, "*@gmail.com"}]}
                ]},
-    ?assertEqual(<<"SELECT id, username",
+    ?assertEqual(<<"SELECT id, username ",
                    "FROM user ",
                    "WHERE email LIKE '*@gmail.com' ">>,
                  erma:build(Select0)),
@@ -39,12 +63,12 @@ append_test() ->
          {order, "created"}
         ]},
        Select1),
-    ?assertEqual(<<"SELECT id, username",
+    ?assertEqual(<<"SELECT id, username ",
                    "FROM user ",
                    "WHERE email LIKE '*@gmail.com' ",
                    "AND active = true ",
                    "AND age > 18 ",
-                   "ORDER BY created ">>,
+                   "ORDER BY created ASC ">>,
                  erma:build(Select1)),
 
     Select2 = erma:append(Select1, {limit, 20}),
@@ -56,13 +80,13 @@ append_test() ->
          {limit, 20}
         ]},
        Select2),
-    ?assertEqual(<<"SELECT id, username",
+    ?assertEqual(<<"SELECT id, username ",
                    "FROM user ",
                    "WHERE email LIKE '*@gmail.com' ",
                    "AND active = true ",
                    "AND age > 18 ",
                    "ORDER BY created ",
-                   "LIMIT 20" >>,
+                   "LIMIT 20 ">>,
                  erma:build(Select2)),
     ok.
 
@@ -84,9 +108,9 @@ relations_test() ->
 
     ?assertEqual(<<"SELECT email.email, address.state, account.name ",
                    "FROM user ",
-                   "LEFT JOIN email ON user.email_id = email.id ",
-                   "LEFT JOIN address ON user.address_id = address.id ",
-                   "LEFT JOIN account ON user.account_id = account.id ">>,
+                   "LEFT JOIN email ON email.id = user.email_id ",
+                   "LEFT JOIN address ON address.id = user.address_id ",
+                   "LEFT JOIN account ON account.id = user.account_id ">>,
                  erma:build(Select)),
     ok.
 
