@@ -9,9 +9,12 @@ build({select, Table, Entities}) ->
     Fields = build_fields(Entities),
     Joins = build_joins(Table, Entities),
     Where = build_where(Entities),
+    Order = build_order(Entities),
+    Limit = build_limit(Entities),
     <<"SELECT ", Fields/binary,
       " FROM ", TableName/binary,
-      Joins/binary, Where/binary>>.
+      Joins/binary, Where/binary,
+      Order/binary, Limit/binary>>.
 
 
 append({Query, Table, Entities}, NewEntities) when is_list(NewEntities) ->
@@ -36,33 +39,65 @@ build_fields(Entities) ->
 build_joins(MainTable, Entities) ->
     case proplists:get_value(with, Entities) of
         undefined -> <<>>;
-        WEntities -> W1 = lists:map(fun(Table) ->
-                                            build_join(MainTable, Table)
-                                    end, WEntities),
-                     W2 = list_to_binary(string:join(W1, " ")),
-                     <<" ", W2/binary>>
+        JEntities -> J1 = lists:map(fun(Table) ->
+                                            lists:flatten(build_join(MainTable, Table))
+                                    end, JEntities),
+                     J2 = list_to_binary(string:join(J1, " ")),
+                     <<" ", J2/binary>>
     end.
 
 
 build_join(MainTable, JoinTable) ->
     MainTableName = get_name(MainTable),
     JoinTableName = get_name(JoinTable),
-    lists:flatten(["LEFT JOIN ", JoinTableName, " ON ",
-                   JoinTableName, ".id = ",
-                   MainTableName, ".", JoinTableName, "_id"]).
+    ["LEFT JOIN ", JoinTableName, " ON ",
+     JoinTableName, ".id = ",
+     MainTableName, ".", JoinTableName, "_id"].
 
 
 build_where(Entities) ->
     case proplists:get_value(where, Entities) of
         undefined -> <<>>;
-        WEntities -> W1 = lists:map(fun build_where_entity/1, WEntities),
+        WEntities -> W1 = lists:map(fun(Entity) ->
+                                            lists:flatten(build_where_entity(Entity))
+                                    end, WEntities),
                      W2 = list_to_binary(string:join(W1, " AND ")),
                      <<" WHERE ", W2/binary>>
     end.
 
 
-build_where_entity({Key, Value}) ->
-    lists:flatten([Key, " = '", Value, "'"]).
+build_where_entity({Key, '>', Value}) when is_integer(Value) -> [Key, " > ", integer_to_list(Value)];
+build_where_entity({Key, '<', Value}) when is_integer(Value) -> [Key, " < ", integer_to_list(Value)];
+build_where_entity({Key, true}) -> [Key, " = true"];
+build_where_entity({Key, false}) -> [Key, " = false"];
+build_where_entity({Key, like, Value}) when is_list(Value) -> [Key, " LIKE '", Value, "'"];
+build_where_entity({Key, Value}) when is_integer(Value) -> [Key, " = ", integer_to_list(Value)];
+build_where_entity({Key, Value}) when is_list(Value) -> [Key, " = '", Value, "'"].
+
+
+build_order(Entities) ->
+    case proplists:get_value(order, Entities) of
+        undefined -> <<>>;
+        OEntities -> O1 = lists:map(fun(Entity) ->
+                                            lists:flatten(build_order_entity(Entity))
+                                    end, OEntities),
+                     O2 = list_to_binary(string:join(O1, ", ")),
+                     <<" ORDER BY ", O2/binary>>
+    end.
+
+
+build_order_entity({Field, asc}) -> [Field, " ASC"];
+build_order_entity({Field, desc}) -> [Field, " DESC"];
+build_order_entity(Field) -> [Field, " ASC"].
+
+
+build_limit(Entities) ->
+    case proplists:get_value(limit, Entities) of
+        undefined -> <<>>;
+        Num when is_integer(Num) ->
+            L = list_to_binary(integer_to_list(Num)),
+            <<" LIMIT ", L/binary>>
+    end.
 
 
 merge([], Entities2) -> Entities2;

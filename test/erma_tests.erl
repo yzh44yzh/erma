@@ -51,16 +51,16 @@ append_test() ->
                ]},
     ?assertEqual(<<"SELECT id, username ",
                    "FROM user ",
-                   "WHERE email LIKE '*@gmail.com' ">>,
+                   "WHERE email LIKE '*@gmail.com'">>,
                  erma:build(Select0)),
 
     Select1 = erma:append(Select0, [{where, [{"active", true}, {"age", '>', 18}]},
-                                    {order, "created"}]),
+                                    {order, ["created"]}]),
     ?assertEqual(
        {select, {table, "user"},
         [{fields, ["id", "username"]},
          {where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]},
-         {order, "created"}
+         {order, ["created"]}
         ]},
        Select1),
     ?assertEqual(<<"SELECT id, username ",
@@ -68,7 +68,7 @@ append_test() ->
                    "WHERE email LIKE '*@gmail.com' ",
                    "AND active = true ",
                    "AND age > 18 ",
-                   "ORDER BY created ASC ">>,
+                   "ORDER BY created ASC">>,
                  erma:build(Select1)),
 
     Select2 = erma:append(Select1, {limit, 20}),
@@ -76,7 +76,7 @@ append_test() ->
        {select, {table, "user"},
         [{fields, ["id", "username"]},
          {where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]},
-         {order, "created"},
+         {order, ["created"]},
          {limit, 20}
         ]},
        Select2),
@@ -85,9 +85,27 @@ append_test() ->
                    "WHERE email LIKE '*@gmail.com' ",
                    "AND active = true ",
                    "AND age > 18 ",
-                   "ORDER BY created ",
-                   "LIMIT 20 ">>,
+                   "ORDER BY created ASC ",
+                   "LIMIT 20">>,
                  erma:build(Select2)),
+
+    Select3 = erma:append(Select2, {order, [{"id", desc}]}),
+    ?assertEqual(
+       {select, {table, "user"},
+        [{fields, ["id", "username"]},
+         {where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]},
+         {order, ["created", {"id", desc}]},
+         {limit, 20}
+        ]},
+       Select3),
+    ?assertEqual(<<"SELECT id, username ",
+                   "FROM user ",
+                   "WHERE email LIKE '*@gmail.com' ",
+                   "AND active = true ",
+                   "AND age > 18 ",
+                   "ORDER BY created ASC, id DESC ",
+                   "LIMIT 20">>,
+                 erma:build(Select3)),
     ok.
 
 
@@ -110,7 +128,7 @@ relations_test() ->
                    "FROM user ",
                    "LEFT JOIN email ON email.id = user.email_id ",
                    "LEFT JOIN address ON address.id = user.address_id ",
-                   "LEFT JOIN account ON account.id = user.account_id ">>,
+                   "LEFT JOIN account ON account.id = user.account_id">>,
                  erma:build(Select)),
     ok.
 
