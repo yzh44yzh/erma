@@ -13,6 +13,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
 Simple select:
 
 ```erlang
+    TUser = {table, "user"},
     Select = {select, TUser,
              [{with, [TAddress]},
               {fields, ["first_name", "last_name", "address.state"]},
@@ -81,4 +82,4 @@ Join tables:
                  erma:build(Select))
 ```
 
-See [unit tests](blob/master/test/erma_tests.erl) for more samples.
+See [unit tests](test/erma_tests.erl) for more samples.
