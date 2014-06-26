@@ -12,7 +12,7 @@ run:
 	erl +pc unicode -pa ebin
 
 d:
-	dialyzer --src -I include src
+	dialyzer --src src
 
 etags:
 	etags src/*

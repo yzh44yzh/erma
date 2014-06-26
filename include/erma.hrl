@@ -1,2 +1,0 @@
--type(some() :: term()).
-
