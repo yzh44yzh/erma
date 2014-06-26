@@ -5,7 +5,7 @@
 
 -type name() :: string().
 -type action() :: like | '<' | lt | '>' | gt.
--type value() :: boolean() | integer() | float() | string().
+-type value() :: atom() | boolean() | integer() | float() | string().
 -type sql() :: binary().
 
 -type equery() :: {equery_type(), table(), [entity()]}.
@@ -15,9 +15,9 @@
 -type table_relation() :: has_one | has_many | belongs_to.
 -type table_prop() :: {table_relation(), table()}.
 
--type entity() :: {entity_type(), [entity_prop()]}.
+-type entity() :: {entity_type(), entity_prop() | [entity_prop()]}.
 -type entity_type() :: fields | with | where | order | limit.
--type entity_prop() :: name() | {name(), value()} | {name(), action(), value()}.
+-type entity_prop() :: name() | value() | {name(), value()} | {name(), action(), value()}.
 
 
 -export_type([name/0, action/0, value/0, sql/0,

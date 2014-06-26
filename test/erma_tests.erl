@@ -89,7 +89,7 @@ append_test() ->
                    "LIMIT 20">>,
                  erma:build(Select2)),
 
-    Select3 = erma:append(Select2, {order, [{"id", desc}]}),
+    Select3 = erma:append(Select2, [{order, [{"id", desc}]}]),
     ?assertEqual(
        {select, {table, "user"},
         [{fields, ["id", "username"]},
@@ -133,22 +133,19 @@ relations_test() ->
     ok.
 
 
-%% TODO: Built for the real world.
-%% http://sqlkorma.com/
-%%
-%% (defentity address
-%%   (table :__addresses :address))
-%%
-%% (defentity users
-%%   (table :somecrazy_table_name :users)
-%%   (pk :userID)
-%%   (has-many address {:fk :userID}))
-%%
-%% (select users
-%%   (with address)
-%%   (where {:last_login [< a-week-ago]}))
-%%
-%% (select users
-%%   (aggregate (count :*) :cnt)
-%%   (where (or (> :visits 20)
-%%              (< :last_login a-year-ago))))
+%% complex_test() ->
+%%     TAddress = {table, "addresses", [{as, "address"}]},
+%%     TUser = {table, "foo_users",
+%%              [{as, "user"},
+%%               {pk, "userID"},
+%%               {has_many, TAddress, [{fk, "userID"}]}]},
+
+%%     Select1 = {select, TUser,
+%%                [{with, TAddress},
+%%                 {where, [{"last_login", lt, "a_week_ago"}]}]},
+
+%%     Select2 = {select, TUser,
+%%                [{aggregate, count, "*", "cnt"},
+%%                 {where, [{'or', [{"visits", gt, 20},
+%%                                  {"last_login", "a_year_ago"}]}]}]},
+%%     ok.
