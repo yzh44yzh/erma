@@ -4,8 +4,6 @@
 %%% types
 
 -type name() :: string().
--type action() :: like | '<' | lt | '>' | gt.
--type value() :: atom() | boolean() | integer() | float() | string().
 -type sql() :: binary().
 
 -type equery() :: {equery_type(), table(), [entity()]}.
@@ -15,15 +13,26 @@
 -type table_relation() :: has_one | has_many | belongs_to.
 -type table_prop() :: {table_relation(), table()}.
 
--type entity() :: {entity_type(), entity_prop() | [entity_prop()]}.
--type entity_type() :: fields | with | where | order | limit.
--type entity_prop() :: name() | value() | {name(), value()} | {name(), action(), value()}.
+-type entity() :: fields_entity() | with_entity() | where_entity() |
+                  order_entity() | limit_entity().
 
+-type fields_entity() :: {fields, [name()]}.
+-type with_entity() :: {with, [table()]}.
+-type where_entity() :: {where, [{name(), where_value()} |
+                                 {name(), where_action(), where_value()}]}.
+-type order_entity() :: {order, order_value() | [order_value()]}.
+-type limit_entity() :: {limit, integer()}.
 
--export_type([name/0, action/0, value/0, sql/0,
+-type where_action() :: like | '<' | lt | '>' | gt.
+-type where_value() :: atom() | boolean() | integer() | float() | string().
+-type order_value() :: name() | {name(), asc} | {name(), desc}.
+
+-export_type([name/0, sql/0,
               equery/0, equery_type/0,
               table/0, table_relation/0, table_prop/0,
-              entity/0, entity_type/0, entity_prop/0]).
+              entity/0, fields_entity/0, with_entity/0,
+              where_entity/0, order_entity/0, limit_entity/0,
+              where_action/0, where_value/0, order_value/0]).
 
 
 %%% module API
@@ -97,7 +106,7 @@ build_where(Entities) ->
     end.
 
 
--spec build_where_entity(entity()) -> iolist().
+-spec build_where_entity(where_entity()) -> iolist().
 build_where_entity({Key, '>', Value}) when is_integer(Value) -> [Key, " > ", integer_to_list(Value)];
 build_where_entity({Key, '<', Value}) when is_integer(Value) -> [Key, " < ", integer_to_list(Value)];
 build_where_entity({Key, true}) -> [Key, " = true"];
@@ -119,7 +128,7 @@ build_order(Entities) ->
     end.
 
 
--spec build_order_entity(entity()) -> iolist().
+-spec build_order_entity(order_entity()) -> iolist().
 build_order_entity({Field, asc}) -> [Field, " ASC"];
 build_order_entity({Field, desc}) -> [Field, " DESC"];
 build_order_entity(Field) -> [Field, " ASC"].
