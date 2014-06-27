@@ -19,13 +19,16 @@
 -type fields_entity() :: {fields, [name()]}.
 -type with_entity() :: {with, [table()]}.
 -type where_entity() :: {where, [{name(), where_value()} |
-                                 {name(), where_action(), where_value()}]}.
+                                 {name(), where_action(), where_value()} |
+                                 {'not', where_entity()} |
+                                 {'and', [where_entity()]} |
+                                 {'or', [where_entity()]}]}.
 -type order_entity() :: {order, order_value() | [order_value()]}.
 -type offset_entity() :: {offset, integer()}.
 -type limit_entity() :: {limit, integer()}.
 
--type where_action() :: like | '<' | lt | '>' | gt.
--type where_value() :: atom() | boolean() | integer() | float() | string().
+-type where_action() :: '=' | '<' | '>' | '>=' | '<=' | like | in | between.
+-type where_value() :: boolean() | integer() | float() | string().
 -type order_value() :: name() | {name(), asc} | {name(), desc}.
 
 -export_type([name/0, sql/0,
@@ -106,16 +109,24 @@ build_where(Entities) ->
                      <<" WHERE ", W2/binary>>
     end.
 
-
+%% TODO tests for all cases
 -spec build_where_entity(where_entity()) -> iolist().
-build_where_entity({Key, '>', Value}) when is_integer(Value) -> [Key, " > ", integer_to_list(Value)];
-build_where_entity({Key, '<', Value}) when is_integer(Value) -> [Key, " < ", integer_to_list(Value)];
+build_where_entity({Key, '=', Value}) -> [Key, " = ", build_where_value(Value)];
+build_where_entity({Key, '>', Value}) -> [Key, " > ", build_where_value(Value)];
+build_where_entity({Key, '<', Value}) -> [Key, " < ", build_where_value(Value)];
+build_where_entity({Key, '>=', Value}) -> [Key, " >= ", build_where_value(Value)];
+build_where_entity({Key, '<=', Value}) -> [Key, " <= ", build_where_value(Value)];
 build_where_entity({Key, true}) -> [Key, " = true"];
 build_where_entity({Key, false}) -> [Key, " = false"];
 build_where_entity({Key, like, Value}) when is_list(Value) -> [Key, " LIKE '", Value, "'"];
-build_where_entity({Key, Value}) when is_integer(Value) -> [Key, " = ", integer_to_list(Value)];
-build_where_entity({Key, Value}) when is_list(Value) -> [Key, " = '", Value, "'"].
+build_where_entity({Key, Value}) -> [Key, " = ", build_where_value(Value)].
+%% TODO in | between.
+%% TODO 'not' 'or' 'and'
 
+-spec build_where_value(where_value()) -> iolist().
+build_where_value(Value) when is_integer(Value) -> integer_to_list(Value);
+build_where_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
+build_where_value(Value) when is_list(Value) -> ["'", Value, "'"].
 
 -spec build_order([entity()]) -> binary().
 build_order(Entities) ->
