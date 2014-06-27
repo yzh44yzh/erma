@@ -42,13 +42,13 @@
 build({select, Table, Entities}) ->
     TableName = list_to_binary(get_name(Table)),
     Fields = build_fields(Entities),
-    Joins = build_joins(Table, Entities),
+    With = build_with(Table, Entities),
     Where = build_where(Entities),
     Order = build_order(Entities),
     OffsetLimit = build_offset_limit(Entities),
     <<"SELECT ", Fields/binary,
       " FROM ", TableName/binary,
-      Joins/binary, Where/binary,
+      With/binary, Where/binary,
       Order/binary, OffsetLimit/binary>>.
 
 
@@ -74,25 +74,25 @@ build_fields(Entities) ->
       end).
 
 
--spec build_joins(table(), [entity()]) -> binary().
-build_joins(MainTable, Entities) ->
+-spec build_with(table(), [entity()]) -> binary().
+build_with(MainTable, Entities) ->
     case proplists:get_value(with, Entities) of
         undefined -> <<>>;
-        JEntities -> J1 = lists:map(fun(Table) ->
-                                            lists:flatten(build_join(MainTable, Table))
-                                    end, JEntities),
-                     J2 = list_to_binary(string:join(J1, " ")),
-                     <<" ", J2/binary>>
+        WEntities -> W1 = lists:map(fun(Table) ->
+                                            lists:flatten(build_with_entity(MainTable, Table))
+                                    end, WEntities),
+                     W2 = list_to_binary(string:join(W1, " ")),
+                     <<" ", W2/binary>>
     end.
 
 
--spec build_join(table(), table()) -> iolist().
-build_join(MainTable, JoinTable) ->
+-spec build_with_entity(table(), table()) -> iolist().
+build_with_entity(MainTable, WithTable) ->
     MainTableName = get_name(MainTable),
-    JoinTableName = get_name(JoinTable),
-    ["LEFT JOIN ", JoinTableName, " ON ",
-     JoinTableName, ".id = ",
-     MainTableName, ".", JoinTableName, "_id"].
+    WithTableName = get_name(WithTable),
+    ["LEFT JOIN ", WithTableName, " ON ",
+     WithTableName, ".id = ",
+     MainTableName, ".", WithTableName, "_id"].
 
 
 -spec build_where([entity()]) -> binary().
