@@ -133,6 +133,67 @@ relations_test() ->
     ok.
 
 
+order_test() ->
+    Select1 = {select, {table, "user"},
+               [{fields, ["id", "username"]},
+                {order, ["created"]}
+               ]},
+    ?assertEqual(<<"SELECT id, username FROM user ",
+                   "ORDER BY created ASC">>,
+                 erma:build(Select1)),
+    Select2 = {select, {table, "user"},
+               [{fields, ["id", "username"]},
+                {order, ["created", {"username", desc}]}
+               ]},
+    ?assertEqual(<<"SELECT id, username FROM user ",
+                   "ORDER BY created ASC, username DESC">>,
+                 erma:build(Select2)),
+    Select3 = {select, {table, "user"},
+               [{fields, ["id", "username"]},
+                {order, ["id", "created", {"last_login", asc}, {"username", desc}]}
+               ]},
+    ?assertEqual(<<"SELECT id, username FROM user ",
+                   "ORDER BY id ASC, created ASC, last_login ASC, username DESC">>,
+                 erma:build(Select3)),
+    ok.
+
+
+offset_limit_test() ->
+    Select0 = {select, {table, "user"},
+               [{fields, ["id", "username"]}]},
+    ?assertEqual(<<"SELECT id, username FROM user">>,
+                 erma:build(Select0)),
+    Select1 = {select, {table, "user"},
+               [{fields, ["id", "username"]},
+                {limit, 20}
+               ]},
+    ?assertEqual(<<"SELECT id, username FROM user ",
+                   "LIMIT 20">>,
+                 erma:build(Select1)),
+    Select2 = {select, {table, "user"},
+               [{fields, ["id", "username"]},
+                {limit, 20}, {offset, 0}
+               ]},
+    ?assertEqual(<<"SELECT id, username FROM user ",
+                   "OFFSET 0, LIMIT 20">>,
+                 erma:build(Select2)),
+    Select3 = {select, {table, "user"},
+               [{fields, ["id", "username"]},
+                {offset, 100}, {limit, 20}
+               ]},
+    ?assertEqual(<<"SELECT id, username FROM user ",
+                   "OFFSET 100, LIMIT 20">>,
+                 erma:build(Select3)),
+    Select4 = {select, {table, "user"},
+               [{fields, ["id", "username"]},
+                {offset, 10}
+               ]},
+    ?assertEqual(<<"SELECT id, username FROM user ",
+                   "OFFSET 10">>,
+                 erma:build(Select4)),
+    ok.
+
+
 %% complex_test() ->
 %%     TAddress = {table, "addresses", [{as, "address"}]},
 %%     TUser = {table, "foo_users",

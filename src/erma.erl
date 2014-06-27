@@ -14,13 +14,14 @@
 -type table_prop() :: {table_relation(), table()}.
 
 -type entity() :: fields_entity() | with_entity() | where_entity() |
-                  order_entity() | limit_entity().
+                  order_entity() | offset_entity() | limit_entity().
 
 -type fields_entity() :: {fields, [name()]}.
 -type with_entity() :: {with, [table()]}.
 -type where_entity() :: {where, [{name(), where_value()} |
                                  {name(), where_action(), where_value()}]}.
 -type order_entity() :: {order, order_value() | [order_value()]}.
+-type offset_entity() :: {offset, integer()}.
 -type limit_entity() :: {limit, integer()}.
 
 -type where_action() :: like | '<' | lt | '>' | gt.
@@ -44,11 +45,11 @@ build({select, Table, Entities}) ->
     Joins = build_joins(Table, Entities),
     Where = build_where(Entities),
     Order = build_order(Entities),
-    Limit = build_limit(Entities),
+    OffsetLimit = build_offset_limit(Entities),
     <<"SELECT ", Fields/binary,
       " FROM ", TableName/binary,
       Joins/binary, Where/binary,
-      Order/binary, Limit/binary>>.
+      Order/binary, OffsetLimit/binary>>.
 
 
 -spec append(equery(), [entity()] | entity()) -> equery().
@@ -134,14 +135,24 @@ build_order_entity({Field, desc}) -> [Field, " DESC"];
 build_order_entity(Field) -> [Field, " ASC"].
 
 
--spec build_limit([entity()]) -> binary().
-build_limit(Entities) ->
-    case proplists:get_value(limit, Entities) of
-        undefined -> <<>>;
-        Num when is_integer(Num) ->
-            L = list_to_binary(integer_to_list(Num)),
-            <<" LIMIT ", L/binary>>
-    end.
+-spec build_offset_limit([entity()]) -> binary().
+build_offset_limit(Entities) ->
+    F = fun(Key, Str) ->
+                case proplists:get_value(Key, Entities) of
+                    undefined -> "";
+                    Num when is_integer(Num) ->
+                        [Str, " ", integer_to_list(Num)]
+                end
+        end,
+    Offset = F(offset, "OFFSET"),
+    Limit = F(limit, "LIMIT"),
+    list_to_binary(
+      case {Offset, Limit} of
+          {"", ""} -> "";
+          {"", _} -> [" ", Limit];
+          {_, ""} -> [" ", Offset];
+          _ -> [" ", Offset, ", ", Limit]
+      end).
 
 
 -spec merge([entity()], [entity()]) -> [entity()].
