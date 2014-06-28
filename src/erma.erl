@@ -109,24 +109,46 @@ build_where(Entities) ->
                      <<" WHERE ", W2/binary>>
     end.
 
-%% TODO tests for all cases
 -spec build_where_entity(where_entity()) -> iolist().
-build_where_entity({Key, '=', Value}) -> [Key, " = ", build_where_value(Value)];
-build_where_entity({Key, '>', Value}) -> [Key, " > ", build_where_value(Value)];
-build_where_entity({Key, '<', Value}) -> [Key, " < ", build_where_value(Value)];
-build_where_entity({Key, '>=', Value}) -> [Key, " >= ", build_where_value(Value)];
-build_where_entity({Key, '<=', Value}) -> [Key, " <= ", build_where_value(Value)];
-build_where_entity({Key, true}) -> [Key, " = true"];
-build_where_entity({Key, false}) -> [Key, " = false"];
-build_where_entity({Key, like, Value}) when is_list(Value) -> [Key, " LIKE '", Value, "'"];
-build_where_entity({Key, Value}) -> [Key, " = ", build_where_value(Value)].
-%% TODO in | between.
-%% TODO 'not' 'or' 'and'
+build_where_entity({'not', WEntity}) ->
+    ["NOT (", build_where_entity(WEntity), ")"];
+build_where_entity({'or', WEntities}) ->
+    W = lists:map(fun build_where_entity/1, WEntities),
+    ["(", string:join(W, " OR "), ")"];
+build_where_entity({'and', WEntities}) ->
+    W = lists:map(fun build_where_entity/1, WEntities),
+    ["(", string:join(W, " AND "), ")"];
+build_where_entity({Key, '=', Value}) ->
+    [Key, " = ", build_where_value(Value)];
+build_where_entity({Key, '>', Value}) ->
+    [Key, " > ", build_where_value(Value)];
+build_where_entity({Key, '<', Value}) ->
+    [Key, " < ", build_where_value(Value)];
+build_where_entity({Key, '>=', Value}) ->
+    [Key, " >= ", build_where_value(Value)];
+build_where_entity({Key, '<=', Value}) ->
+    [Key, " <= ", build_where_value(Value)];
+build_where_entity({Key, true}) ->
+    [Key, " = true"];
+build_where_entity({Key, false}) ->
+    [Key, " = false"];
+build_where_entity({Key, like, Value}) when is_list(Value) ->
+    [Key, " LIKE '", Value, "'"];
+build_where_entity({Key, in, Values}) when is_list(Values) ->
+    V = lists:map(fun build_where_value/1, Values),
+    [Key, " IN (", string:join(V, ", "), ")"];
+build_where_entity({Key, between, Value1, Value2}) ->
+    [Key, " BETWEEN ", build_where_value(Value1), % TODO valid syntax?
+     " ", build_where_value(Value2)];
+build_where_entity({Key, Value}) ->
+    [Key, " = ", build_where_value(Value)].
+
 
 -spec build_where_value(where_value()) -> iolist().
 build_where_value(Value) when is_integer(Value) -> integer_to_list(Value);
 build_where_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
 build_where_value(Value) when is_list(Value) -> ["'", Value, "'"].
+
 
 -spec build_order([entity()]) -> binary().
 build_order(Entities) ->
