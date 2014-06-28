@@ -20,6 +20,8 @@
 -type with_entity() :: {with, [table()]}.
 -type where_entity() :: {where, [{name(), where_value()} |
                                  {name(), where_action(), where_value()} |
+                                 {name(), in, [where_value()]} |
+                                 {name(), between, where_value(), where_value()} |
                                  {'not', where_entity()} |
                                  {'and', [where_entity()]} |
                                  {'or', [where_entity()]}]}.
@@ -27,7 +29,7 @@
 -type offset_entity() :: {offset, integer()}.
 -type limit_entity() :: {limit, integer()}.
 
--type where_action() :: '=' | '<' | '>' | '>=' | '<=' | like | in | between.
+-type where_action() :: '=' | '<' | '>' | '>=' | '<=' | like.
 -type where_value() :: boolean() | integer() | float() | string().
 -type order_value() :: name() | {name(), asc} | {name(), desc}.
 
