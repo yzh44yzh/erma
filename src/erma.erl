@@ -111,7 +111,7 @@ build_where(Entities) ->
 
 -spec build_where_entity(where_entity()) -> iolist().
 build_where_entity({'not', WEntity}) ->
-    ["NOT (", build_where_entity(WEntity), ")"];
+    ["(NOT ", build_where_entity(WEntity), ")"];
 build_where_entity({'or', WEntities}) ->
     W = lists:map(fun build_where_entity/1, WEntities),
     ["(", string:join(W, " OR "), ")"];
