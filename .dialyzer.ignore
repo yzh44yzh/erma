@@ -1,0 +1,5 @@
+  erlang:get_module_info/1
+  erlang:get_module_info/2
+  erlang:integer_to_list/1
+  erlang:list_to_binary/1
+  eunit:test/1
