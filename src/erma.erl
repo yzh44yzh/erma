@@ -11,7 +11,7 @@
 
 -type table() :: {table, name()} | {table, name(), [table_prop()]}.
 -type table_relation() :: has_one | has_many | belongs_to.
--type table_prop() :: {table_relation(), table()}.
+-type table_prop() :: {table_relation(), table()} | {as, name()} | {pk, name()} | {fk, name()}.
 
 -type entity() :: fields_entity() | with_entity() | where_entity() |
                   order_entity() | offset_entity() | limit_entity().
@@ -45,16 +45,19 @@
 
 -spec build(equery()) -> sql().
 build({select, Table, Entities}) ->
-    TableName = list_to_binary(get_name(Table)),
     Fields = build_fields(Entities),
+    From = build_from(Table),
     With = build_with(Table, Entities),
     Where = build_where(Entities),
     Order = build_order(Entities),
     OffsetLimit = build_offset_limit(Entities),
-    <<"SELECT ", Fields/binary,
-      " FROM ", TableName/binary,
-      With/binary, Where/binary,
-      Order/binary, OffsetLimit/binary>>.
+    <<"SELECT ",
+      Fields/binary,
+      From/binary,
+      With/binary,
+      Where/binary,
+      Order/binary,
+      OffsetLimit/binary>>.
 
 
 -spec append(equery(), [entity()] | entity()) -> equery().
@@ -70,6 +73,15 @@ get_name({table, Name}) -> Name;
 get_name({table, Name, _Props}) -> Name.
 
 
+-spec get_alias(table()) -> name() | not_found.
+get_alias({table, _Name}) -> not_found;
+get_alias({table, _Name, Props}) ->
+    case proplists:get_value(as, Props) of
+        undefined -> not_found;
+        Alias -> Alias
+    end.
+
+
 -spec build_fields([entity()]) -> binary().
 build_fields(Entities) ->
     list_to_binary(
@@ -77,6 +89,17 @@ build_fields(Entities) ->
           undefined -> "*";
           List -> string:join(List, ", ")
       end).
+
+
+-spec build_from(table()) -> binary().
+build_from(Table) ->
+    TableName = list_to_binary(get_name(Table)),
+    Alias = case get_alias(Table) of
+                not_found -> <<>>;
+                A -> A1 = list_to_binary(A),
+                     <<" AS ", A1/binary>>
+            end,
+    <<" FROM ", TableName/binary, Alias/binary>>.
 
 
 -spec build_with(table(), [entity()]) -> binary().
@@ -94,10 +117,20 @@ build_with(MainTable, Entities) ->
 -spec build_with_entity(table(), table()) -> iolist().
 build_with_entity(MainTable, WithTable) ->
     MainTableName = get_name(MainTable),
+    MainTableAlias = case get_alias(MainTable) of
+                not_found -> MainTableName;
+                A1 -> A1
+            end,
+
     WithTableName = get_name(WithTable),
-    ["LEFT JOIN ", WithTableName, " ON ",
-     WithTableName, ".id = ",
-     MainTableName, ".", WithTableName, "_id"].
+    {WithTableAlias, Join} = case get_alias(WithTable) of
+                not_found -> {WithTableName, WithTableName};
+                A2 -> {A2, [WithTableName, " AS ", A2]}
+            end,
+
+    PrimaryKey = [MainTableAlias, ".", WithTableAlias, "_id"],
+    ForeignKey = [WithTableAlias, ".id"],
+    ["LEFT JOIN ", Join, " ON ", ForeignKey, " = ", PrimaryKey].
 
 
 -spec build_where([entity()]) -> binary().

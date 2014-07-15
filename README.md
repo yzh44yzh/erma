@@ -7,6 +7,8 @@ SQL builder for Erlang inspired by [Korma, Tasty SQL for Clojure](http://sqlkorm
 Erma is a DSL language to describe and generate SQL queries.
 Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
 
+IT IS JUST PROTOTYPE, NOT READY TO USE.
+
 
 ## Samples
 
