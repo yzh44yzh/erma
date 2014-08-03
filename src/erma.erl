@@ -62,29 +62,37 @@ build_joins(MainTable, Entities) ->
 build_join_entity(MainTable, {JoinType, JoinTable}) ->
     build_join_entity(MainTable, {JoinType, JoinTable, []});
 
-build_join_entity(MainTable, {JoinType, JoinTable, _JoinProps}) ->
+build_join_entity(MainTable, {JoinType, JoinTable, JoinProps}) ->
+    Join = case JoinType of
+               inner -> "INNER JOIN ";
+               left -> "LEFT JOIN ";
+               right -> "RIGHT JOIN ";
+               full -> "FULL JOIN "
+           end,
+    Table =
+        case JoinTable of
+            {table, Name3} -> Name3;
+            {table, Name3, as, Alias3} -> [Name3, " AS ", Alias3]
+        end,
     MainAlias =
         case MainTable of
             {table, Name1} -> Name1;
             {table, _, as, Alias1} -> Alias1
         end,
-    {Join, JoinName, JoinAlias} =
+    {JoinName, JoinAlias} =
         case JoinTable of
-            {table, Name2} -> {Name2, Name2, Name2};
-            {table, Name2, as, Alias2} -> {[Name2, " AS ", Alias2], Name2, Alias2}
+            {table, Name2} -> {Name2, Name2};
+            {table, Name2, as, Alias2} -> {Name2, Alias2}
         end,
-
-    %% TODO use JoinProps
-    PrimaryKey = [MainAlias, ".", JoinName, "_id"],
-    ForeignKey = [JoinAlias, ".id"],
-    On = [" ON ", ForeignKey, " = ", PrimaryKey],
-
-    case JoinType of
-        inner -> ["INNER JOIN ", Join, On];
-        left -> ["LEFT JOIN ", Join, On];
-        right -> ["RIGHT JOIN ", Join, On];
-        full -> ["FULL JOIN ", Join, On]
-    end.
+    PrimaryKey = case proplists:get_value(pk, JoinProps) of
+                     undefined -> "id";
+                     Pk -> Pk
+                 end,
+    ForeignKey = case proplists:get_value(fk, JoinProps) of
+                     undefined -> [JoinName, "_id"];
+                     Fk -> Fk
+                 end,
+    [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", MainAlias, ".", ForeignKey].
 
 
 -spec build_where([entity()]) -> binary().

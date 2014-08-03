@@ -112,3 +112,25 @@ relations6_test() ->
                    "RIGHT JOIN account ON account.id = u.account_id">>,
                  erma:build(Select2)),
     ok.
+
+
+relations7_test() ->
+    TUser = {table, "user", as, "u"},
+    TEmail = {table, "email", as, "e"},
+    TAddress = {table, "address"},
+    TAccount = {table, "account"},
+
+    Select = {select, TUser,
+              [{fields, ["email.email", "address.state", "account.name"]},
+               {joins, [{left, TEmail, [{pk, "eid"}]},
+                        {left, TAddress, [{fk, "addr_id"}]},
+                        {left, TAccount, [{pk, "aid"}, {fk, "acc_id"}]}]}
+              ]},
+
+    ?assertEqual(<<"SELECT email.email, address.state, account.name ",
+                   "FROM user AS u ",
+                   "LEFT JOIN email AS e ON e.eid = u.email_id ",
+                   "LEFT JOIN address ON address.id = u.addr_id ",
+                   "LEFT JOIN account ON account.aid = u.acc_id">>,
+                 erma:build(Select)),
+    ok.
