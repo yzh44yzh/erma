@@ -25,7 +25,7 @@ simple_test() ->
 
     TAddress = {table, "address"},
     Select4 = {select, TUser,
-              [{with, [TAddress]},
+              [{joins, [{left, TAddress}]},
                {fields, ["first_name", "last_name", "address.state"]}
               ]},
     ?assertEqual(<<"SELECT first_name, last_name, address.state ",
@@ -33,7 +33,7 @@ simple_test() ->
                    "LEFT JOIN address ON address.id = user.address_id">>,
                  erma:build(Select4)),
     Select5 = {select, TUser,
-              [{with, [TAddress]},
+              [{joins, [{left, TAddress}]},
                {fields, ["first_name", "last_name", "address.state"]},
                {where, [{"email", "some@where.com"}]}
               ]},

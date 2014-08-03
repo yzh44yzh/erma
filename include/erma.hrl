@@ -5,14 +5,23 @@
 -type equery_type() :: select | insert | update | delete.
 
 -type table() :: {table, name()} | {table, name(), [table_prop()]}.
--type table_relation() :: has_one | has_many | belongs_to.
--type table_prop() :: {table_relation(), table()} | {as, name()} | {pk, name()} | {fk, name()}.
+-type table_prop() :: {as, name()}.
 
--type entity() :: fields_entity() | with_entity() | where_entity() |
-                  order_entity() | offset_entity() | limit_entity().
+-type entity() :: fields_entity() |
+                  joins_entity() |
+                  where_entity() |
+                  order_entity() |
+                  offset_entity() |
+                  limit_entity().
 
 -type fields_entity() :: {fields, [name()]}.
--type with_entity() :: {with, [table()]}.
+
+-type joins_entity() :: {joins, [join()]}.
+
+-type join() :: {join_type(), table()} | {join_type(), table(), [join_prop()]}.
+-type join_type() :: inner | left | right | full.
+-type join_prop() :: {pk, name()} | {fk, name()}.
+
 -type where_entity() :: {where, [{name(), where_value()} |
                                  {name(), where_action(), where_value()} |
                                  {name(), in, [where_value()]} |
@@ -20,8 +29,11 @@
                                  {'not', where_entity()} |
                                  {'and', [where_entity()]} |
                                  {'or', [where_entity()]}]}.
+
 -type order_entity() :: {order, order_value() | [order_value()]}.
+
 -type offset_entity() :: {offset, integer()}.
+
 -type limit_entity() :: {limit, integer()}.
 
 -type where_action() :: '=' | '<' | '>' | '>=' | '<=' | like.

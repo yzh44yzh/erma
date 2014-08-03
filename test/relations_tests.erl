@@ -5,18 +5,16 @@
 
 
 relations1_test() ->
+    TUser = {table, "user"},
     TEmail = {table, "email"},
     TAddress = {table, "address"},
     TAccount = {table, "account"},
-    TUser = {table, "user",
-             [{has_one, TEmail},
-              {has_one, TAddress},
-              {has_one, TAccount}
-             ]},
 
     Select = {select, TUser,
-              [{with, [TEmail, TAddress, TAccount]},
-               {fields, ["email.email", "address.state", "account.name"]}
+              [{fields, ["email.email", "address.state", "account.name"]},
+               {joins, [{left, TEmail},
+                        {left, TAddress},
+                        {left, TAccount}]}
               ]},
 
     ?assertEqual(<<"SELECT email.email, address.state, account.name ",
@@ -40,9 +38,9 @@ relations2_test() ->
 
 relations3_test() ->
     TAddress = {table, "boo_addresses", [{as, "address"}]},
-    TUser = {table, "foo_users", [{as, "user"}, {has_one, TAddress}]},
+    TUser = {table, "foo_users", [{as, "user"}]},
     Select = {select, TUser,
-              [{with, [TAddress]},
+              [{joins, [{left, TAddress}]},
                {fields, ["user.id", "user.name", "address.state"]}
               ]},
 

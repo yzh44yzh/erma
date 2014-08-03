@@ -10,14 +10,14 @@
 build({select, Table, Entities}) ->
     Fields = build_fields(Entities),
     From = build_from(Table),
-    With = build_with(Table, Entities),
+    Joins = build_joins(Table, Entities),
     Where = build_where(Entities),
     Order = build_order(Entities),
     OffsetLimit = build_offset_limit(Entities),
     <<"SELECT ",
       Fields/binary,
       From/binary,
-      With/binary,
+      Joins/binary,
       Where/binary,
       Order/binary,
       OffsetLimit/binary>>.
@@ -65,35 +65,46 @@ build_from(Table) ->
     <<" FROM ", TableName/binary, Alias/binary>>.
 
 
--spec build_with(table(), [entity()]) -> binary().
-build_with(MainTable, Entities) ->
-    case proplists:get_value(with, Entities) of
+-spec build_joins(table(), [entity()]) -> binary().
+build_joins(MainTable, Entities) ->
+    case proplists:get_value(joins, Entities) of
         undefined -> <<>>;
-        WEntities -> W1 = lists:map(fun(Table) ->
-                                            lists:flatten(build_with_entity(MainTable, Table))
-                                    end, WEntities),
-                     W2 = list_to_binary(string:join(W1, " ")),
-                     <<" ", W2/binary>>
+        JEntities -> J1 = lists:map(fun(Join) ->
+                                            lists:flatten(build_join_entity(MainTable, Join))
+                                    end, JEntities),
+                     J2 = list_to_binary(string:join(J1, " ")),
+                     <<" ", J2/binary>>
     end.
 
 
--spec build_with_entity(table(), table()) -> iolist().
-build_with_entity(MainTable, WithTable) ->
+-spec build_join_entity(table(), join()) -> iolist().
+build_join_entity(MainTable, {JoinType, JoinTable}) ->
+    build_join_entity(MainTable, {JoinType, JoinTable, []});
+
+build_join_entity(MainTable, {JoinType, JoinTable, _JoinProps}) ->
     MainTableName = get_name(MainTable),
     MainTableAlias = case get_alias(MainTable) of
-                not_found -> MainTableName;
-                A1 -> A1
-            end,
+                         not_found -> MainTableName;
+                         A1 -> A1
+                     end,
 
-    WithTableName = get_name(WithTable),
-    {WithTableAlias, Join} = case get_alias(WithTable) of
-                not_found -> {WithTableName, WithTableName};
-                A2 -> {A2, [WithTableName, " AS ", A2]}
-            end,
+    JoinTableName = get_name(JoinTable),
+    {JoinTableAlias, JoinName} = case get_alias(JoinTable) of
+                                     not_found -> {JoinTableName, JoinTableName};
+                                     A2 -> {A2, [JoinTableName, " AS ", A2]}
+                                 end,
 
-    PrimaryKey = [MainTableAlias, ".", WithTableAlias, "_id"],
-    ForeignKey = [WithTableAlias, ".id"],
-    ["LEFT JOIN ", Join, " ON ", ForeignKey, " = ", PrimaryKey].
+    %% TODO use JoinProps
+    PrimaryKey = [MainTableAlias, ".", JoinTableAlias, "_id"],
+    ForeignKey = [JoinTableAlias, ".id"],
+    On = [" ON ", ForeignKey, " = ", PrimaryKey],
+
+    case JoinType of
+        inner -> ["INNER JOIN ", JoinName, On];
+        left -> ["LEFT JOIN ", JoinName, On];
+        right -> ["RIGHT JOIN ", JoinName, On];
+        full -> ["FULL JOIN ", JoinName, On]
+    end.
 
 
 -spec build_where([entity()]) -> binary().
