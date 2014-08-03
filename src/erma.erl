@@ -31,20 +31,6 @@ append(Query, NewEntity) -> append(Query, [NewEntity]).
 
 %%% inner functions
 
--spec get_name(table()) -> name().
-get_name({table, Name}) -> Name;
-get_name({table, Name, _Props}) -> Name.
-
-
--spec get_alias(table()) -> name() | not_found.
-get_alias({table, _Name}) -> not_found;
-get_alias({table, _Name, Props}) ->
-    case proplists:get_value(as, Props) of
-        undefined -> not_found;
-        Alias -> Alias
-    end.
-
-
 -spec build_fields([entity()]) -> binary().
 build_fields(Entities) ->
     list_to_binary(
@@ -55,14 +41,9 @@ build_fields(Entities) ->
 
 
 -spec build_from(table()) -> binary().
-build_from(Table) ->
-    TableName = list_to_binary(get_name(Table)),
-    Alias = case get_alias(Table) of
-                not_found -> <<>>;
-                A -> A1 = list_to_binary(A),
-                     <<" AS ", A1/binary>>
-            end,
-    <<" FROM ", TableName/binary, Alias/binary>>.
+build_from({table, Name}) -> list_to_binary(" FROM " ++ Name);
+build_from({table, Name, as, Alias}) ->
+    list_to_binary(lists:flatten([" FROM ", Name, " AS ", Alias])).
 
 
 -spec build_joins(table(), [entity()]) -> binary().
@@ -82,21 +63,18 @@ build_join_entity(MainTable, {JoinType, JoinTable}) ->
     build_join_entity(MainTable, {JoinType, JoinTable, []});
 
 build_join_entity(MainTable, {JoinType, JoinTable, _JoinProps}) ->
-    MainTableName = get_name(MainTable),
-    MainTableAlias = case get_alias(MainTable) of
-                         not_found -> MainTableName;
-                         A1 -> A1
-                     end,
-
-    JoinTableName = get_name(JoinTable),
-    {JoinTableAlias, JoinName} = case get_alias(JoinTable) of
-                                     not_found -> {JoinTableName, JoinTableName};
-                                     A2 -> {A2, [JoinTableName, " AS ", A2]}
-                                 end,
+    MainKey = case MainTable of
+                  {table, Name1} -> Name1;
+                  {table, _, as, Alias1} -> Alias1
+              end,
+    {JoinName, JoinKey} = case JoinTable of
+                              {table, Name2} -> {Name2, Name2};
+                              {table, Name2, as, Alias2} -> {[Name2, " AS ", Alias2], Alias2}
+                          end,
 
     %% TODO use JoinProps
-    PrimaryKey = [MainTableAlias, ".", JoinTableAlias, "_id"],
-    ForeignKey = [JoinTableAlias, ".id"],
+    PrimaryKey = [MainKey, ".", JoinKey, "_id"],
+    ForeignKey = [JoinKey, ".id"],
     On = [" ON ", ForeignKey, " = ", PrimaryKey],
 
     case JoinType of

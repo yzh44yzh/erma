@@ -27,7 +27,7 @@ relations1_test() ->
 
 
 relations2_test() ->
-    TUser = {table, "foo_users", [{as, "user"}]},
+    TUser = {table, "foo_users", as, "user"},
     Select = {select, TUser,
               [{fields, ["user.id", "user.name"]}
               ]},
@@ -37,8 +37,8 @@ relations2_test() ->
 
 
 relations3_test() ->
-    TAddress = {table, "boo_addresses", [{as, "address"}]},
-    TUser = {table, "foo_users", [{as, "user"}]},
+    TAddress = {table, "boo_addresses", as, "address"},
+    TUser = {table, "foo_users", as, "user"},
     Select = {select, TUser,
               [{joins, [{left, TAddress}]},
                {fields, ["user.id", "user.name", "address.state"]}
@@ -52,7 +52,7 @@ relations3_test() ->
 
 
 %%relations3_test() ->
-%%     TAddress = {table, "addresses", [{as, "address"}]},
+%%     TAddress = {table, "addresses", as, "address"},
 %%     TUser = {table, "foo_users",
 %%              [{as, "user"},
 %%               {pk, "userID"},

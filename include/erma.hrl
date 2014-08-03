@@ -4,8 +4,7 @@
 -type equery() :: {equery_type(), table(), [entity()]}.
 -type equery_type() :: select | insert | update | delete.
 
--type table() :: {table, name()} | {table, name(), [table_prop()]}.
--type table_prop() :: {as, name()}.
+-type table() :: {table, name()} | {table, name(), as, name()}.
 
 -type entity() :: fields_entity() |
                   joins_entity() |
