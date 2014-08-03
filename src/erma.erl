@@ -63,25 +63,27 @@ build_join_entity(MainTable, {JoinType, JoinTable}) ->
     build_join_entity(MainTable, {JoinType, JoinTable, []});
 
 build_join_entity(MainTable, {JoinType, JoinTable, _JoinProps}) ->
-    MainKey = case MainTable of
-                  {table, Name1} -> Name1;
-                  {table, _, as, Alias1} -> Alias1
-              end,
-    {JoinName, JoinKey} = case JoinTable of
-                              {table, Name2} -> {Name2, Name2};
-                              {table, Name2, as, Alias2} -> {[Name2, " AS ", Alias2], Alias2}
-                          end,
+    MainAlias =
+        case MainTable of
+            {table, Name1} -> Name1;
+            {table, _, as, Alias1} -> Alias1
+        end,
+    {Join, JoinName, JoinAlias} =
+        case JoinTable of
+            {table, Name2} -> {Name2, Name2, Name2};
+            {table, Name2, as, Alias2} -> {[Name2, " AS ", Alias2], Name2, Alias2}
+        end,
 
     %% TODO use JoinProps
-    PrimaryKey = [MainKey, ".", JoinKey, "_id"],
-    ForeignKey = [JoinKey, ".id"],
+    PrimaryKey = [MainAlias, ".", JoinName, "_id"],
+    ForeignKey = [JoinAlias, ".id"],
     On = [" ON ", ForeignKey, " = ", PrimaryKey],
 
     case JoinType of
-        inner -> ["INNER JOIN ", JoinName, On];
-        left -> ["LEFT JOIN ", JoinName, On];
-        right -> ["RIGHT JOIN ", JoinName, On];
-        full -> ["FULL JOIN ", JoinName, On]
+        inner -> ["INNER JOIN ", Join, On];
+        left -> ["LEFT JOIN ", Join, On];
+        right -> ["RIGHT JOIN ", Join, On];
+        full -> ["FULL JOIN ", Join, On]
     end.
 
 
