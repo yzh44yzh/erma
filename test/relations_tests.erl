@@ -1,4 +1,6 @@
 -module(relations_tests).
+
+-include("erma.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 

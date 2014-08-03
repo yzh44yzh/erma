@@ -1,4 +1,6 @@
 -module(where_tests).
+
+-include("erma.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 where1_test() ->
