@@ -60,9 +60,20 @@ build_joins(MainTable, Entities) ->
 
 -spec build_join_entity(table(), join()) -> iolist().
 build_join_entity(MainTable, {JoinType, JoinTable}) ->
-    build_join_entity(MainTable, {JoinType, JoinTable, []});
+    build_join_entity(JoinType, JoinTable, MainTable, []);
 
-build_join_entity(MainTable, {JoinType, JoinTable, JoinProps}) ->
+build_join_entity(MainTable, {JoinType, JoinTable, JoinProps}) when is_list(JoinProps) ->
+    build_join_entity(JoinType, JoinTable, MainTable, JoinProps);
+
+build_join_entity(_MainTable, {JoinType, JoinTable, ToTable}) when is_tuple(ToTable) ->
+    build_join_entity(JoinType, JoinTable, ToTable, []);
+
+build_join_entity(_MainTable, {JoinType, JoinTable, ToTable, JoinProps}) ->
+    build_join_entity(JoinType, JoinTable, ToTable, JoinProps).
+
+
+-spec build_join_entity(join_type(), table(), table(), [join_prop()]) -> iolist().
+build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
     Join = case JoinType of
                inner -> "INNER JOIN ";
                left -> "LEFT JOIN ";
@@ -74,8 +85,8 @@ build_join_entity(MainTable, {JoinType, JoinTable, JoinProps}) ->
             {table, Name3} -> Name3;
             {table, Name3, as, Alias3} -> [Name3, " AS ", Alias3]
         end,
-    MainAlias =
-        case MainTable of
+    ToAlias =
+        case ToTable of
             {table, Name1} -> Name1;
             {table, _, as, Alias1} -> Alias1
         end,
@@ -92,7 +103,7 @@ build_join_entity(MainTable, {JoinType, JoinTable, JoinProps}) ->
                      undefined -> [JoinName, "_id"];
                      Fk -> Fk
                  end,
-    [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", MainAlias, ".", ForeignKey].
+    [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
 
 
 -spec build_where([entity()]) -> binary().

@@ -134,3 +134,60 @@ relations7_test() ->
                    "LEFT JOIN account ON account.aid = u.acc_id">>,
                  erma:build(Select)),
     ok.
+
+
+relations8_test() ->
+    TUser = {table, "user"},
+    TEmail = {table, "email"},
+    TAddress = {table, "address"},
+
+    Select = {select, TUser,
+              [{fields, ["user.id, email.value, address.city"]},
+               {joins, [{left, TAddress},
+                        {inner, TEmail, TAddress}]}
+              ]},
+
+    ?assertEqual(<<"SELECT user.id, email.value, address.city ",
+                   "FROM user ",
+                   "LEFT JOIN address ON address.id = user.address_id ",
+                   "INNER JOIN email ON email.id = address.email_id">>,
+                 erma:build(Select)),
+    ok.
+
+
+relations9_test() ->
+    TUser = {table, "user", as, "u"},
+    TEmail = {table, "email", as, "e"},
+    TAddress = {table, "address", as, "a"},
+
+    Select = {select, TUser,
+              [{fields, ["u.id, e.value, a.city"]},
+               {joins, [{left, TAddress},
+                        {inner, TEmail, TAddress}]}
+              ]},
+    ?assertEqual(<<"SELECT u.id, e.value, a.city ",
+                   "FROM user AS u ",
+                   "LEFT JOIN address AS a ON a.id = u.address_id ",
+                   "INNER JOIN email AS e ON e.id = a.email_id">>,
+                 erma:build(Select)),
+    ok.
+
+relations10_test() ->
+    TUser = {table, "user", as, "u"},
+    TEmail = {table, "email", as, "e"},
+    TAddress = {table, "address", as, "a"},
+    TCity = {table, "city"},
+
+    Select = {select, TUser,
+              [{fields, ["u.id, e.value, city.value"]},
+               {joins, [{left, TAddress},
+                        {inner, TEmail, TAddress, [{pk, "eid"}, {fk, "em_id"}]},
+                        {inner, TCity, TAddress}]}
+              ]},
+    ?assertEqual(<<"SELECT u.id, e.value, city.value ",
+                   "FROM user AS u ",
+                   "LEFT JOIN address AS a ON a.id = u.address_id ",
+                   "INNER JOIN email AS e ON e.eid = a.em_id ",
+                   "INNER JOIN city ON city.id = a.city_id">>,
+                 erma:build(Select)),
+    ok.

@@ -6,3 +6,4 @@ logs
 ebin
 TAGS
 .idea
+.rebar

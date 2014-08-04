@@ -16,16 +16,15 @@ Simple select:
 
 ```erlang
     TUser = {table, "user"},
-    Select = {select, TUser,
-             [{with, [TAddress]},
-              {fields, ["first_name", "last_name", "address.state"]},
-              {where, [{"email", "some@where.com"}]}
-             ]},
+    TAddress = {table, "address"},
 
+    Select = {select, TUser,
+             [{joins, [{left, TAddress}]},
+              {fields, ["first_name", "last_name", "address.state"]}
+             ]},
     ?assertEqual(<<"SELECT first_name, last_name, address.state ",
                    "FROM user ",
-                   "LEFT JOIN address ON address.id = user.address_id ",
-                   "WHERE email = 'some@where.com'">>,
+                   "LEFT JOIN address ON address.id = user.address_id">>,
                  erma:build(Select)),
 ```
 
@@ -62,25 +61,26 @@ Append more details to select:
 Join tables:
 
 ```erlang
+    TUser = {table, "user"},
     TEmail = {table, "email"},
-    TAddress = {table, "address"},
+    TAddress1 = {table, "address", as, "a1"},
+    TAddress2 = {table, "address", as, "a2"},
     TAccount = {table, "account"},
-    TUser = {table, "user",
-             [{has_one, TEmail},
-              {has_one, TAddress},
-              {has_one, TAccount}
-             ]},
 
     Select = {select, TUser,
-              [{with, [TEmail, TAddress, TAccount]},
-               {fields, ["email.email", "address.state", "account.name"]}
+              [{fields, ["email.email", "address1.state", "address2.state", "account.name"]},
+               {joins, [{left, TEmail},
+                        {right, TAddress1},
+                        {inner, TAddress2},
+                        {full, TAccount}]}
               ]},
 
-    ?assertEqual(<<"SELECT email.email, address.state, account.name ",
+    ?assertEqual(<<"SELECT email.email, address1.state, address2.state, account.name ",
                    "FROM user ",
                    "LEFT JOIN email ON email.id = user.email_id ",
-                   "LEFT JOIN address ON address.id = user.address_id ",
-                   "LEFT JOIN account ON account.id = user.account_id">>,
+                   "RIGHT JOIN address AS a1 ON a1.id = user.address_id ",
+                   "INNER JOIN address AS a2 ON a2.id = user.address_id ",
+                   "FULL JOIN account ON account.id = user.account_id">>,
                  erma:build(Select))
 ```
 

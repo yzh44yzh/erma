@@ -17,7 +17,10 @@
 
 -type joins_entity() :: {joins, [join()]}.
 
--type join() :: {join_type(), table()} | {join_type(), table(), [join_prop()]}.
+-type join() :: {join_type(), table()} |
+                {join_type(), table(), [join_prop()]} |
+                {join_type(), table(), table()} |
+                {join_type(), table(), table(), [join_prop()]}.
 -type join_type() :: inner | left | right | full.
 -type join_prop() :: {pk, name()} | {fk, name()}.
 
