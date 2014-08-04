@@ -12,7 +12,7 @@ where1_test() ->
                  erma:build(Select1)),
 
     Select2 = erma:append(Select1, {where, [{'not', {"blocked", true}},
-                                            {"posted", '>', "2014-02-20"}]}),
+                                            {"posted", '>', {date, {2014, 2, 20}}}]}),
     ?assertEqual(<<"SELECT * FROM post ",
                    "WHERE user_id = 10 AND (NOT blocked = true) AND posted > '2014-02-20'">>,
                  erma:build(Select2)),
@@ -35,11 +35,11 @@ where2_test() ->
 
 where3_test() ->
     ?assertEqual(<<"SELECT * FROM post ",
-                   "WHERE (posted > '2014-01-01' OR posted < '2013-12-20')">>,
+                   "WHERE (posted > '17:15:00' OR posted < '18:05:00')">>,
                  erma:build(
                    {select, {table, "post"},
-                    [{where, [{'or', [{"posted", '>', "2014-01-01"},
-                                      {"posted", '<', "2013-12-20"}]}
+                    [{where, [{'or', [{"posted", '>', {time, {17, 15, 0}}},
+                                      {"posted", '<', {time, {18, 5, 0}}}]}
                              ]}
                     ]}
                   )),
@@ -72,9 +72,12 @@ where5_test() ->
 
 
 where6_test() ->
+    DT1 = {datetime, {{2014, 1, 1}, {22, 30, 0}}},
+    DT2 = {datetime, {{2013, 12, 20}, {12, 15, 0}}},
     ?assertEqual(<<"SELECT * FROM post ",
                    "WHERE (title LIKE '%funny%' OR subject LIKE '%funny%' OR content LIKE '%funny%') ",
-                   "AND (blocked = false AND (posted > '2014-01-01' OR posted < '2013-12-20')) ",
+                   "AND (blocked = false AND "
+                   "(posted > '2014-01-01 22:30:00' OR posted < '2013-12-20 12:15:00')) ",
                    "AND (NOT (user_id = 20 OR user_id = 30)) ",
                    "AND state IN ('active', 'suspended', 'unknown')">>,
                  erma:build(
@@ -83,8 +86,8 @@ where6_test() ->
                                       {"subject", like, "%funny%"},
                                       {"content", like, "%funny%"}]},
                               {'and', [{"blocked", false},
-                                       {'or', [{"posted", '>', "2014-01-01"},
-                                               {"posted", '<', "2013-12-20"}]}]},
+                                       {'or', [{"posted", '>', DT1},
+                                               {"posted", '<', DT2}]}]},
                               {'not', {'or', [{"user_id", 20},
                                               {"user_id", 30}]}},
                               {"state", in, ["active", "suspended", "unknown"]}

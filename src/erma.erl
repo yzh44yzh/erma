@@ -153,6 +153,9 @@ build_where_entity({Key, Value}) ->
 
 
 -spec build_where_value(where_value()) -> iolist().
+build_where_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
+build_where_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
+build_where_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
 build_where_value(Value) when is_integer(Value) -> integer_to_list(Value);
 build_where_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
 build_where_value(Value) when is_list(Value) -> ["'", Value, "'"].
