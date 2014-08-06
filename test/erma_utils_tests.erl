@@ -7,7 +7,7 @@
 
 format_date_test() ->
     ?assertEqual("2014-08-05", erma_utils:format_date({2014,  8,  5})),
-    ?assertEqual("2000-18-15", erma_utils:format_date({2000, 18, 15})),
+    ?assertEqual("2000-12-15", erma_utils:format_date({2000, 12, 15})),
     ?assertEqual("1970-10-01", erma_utils:format_date({1970, 10,  1})),
     ?assertEqual("1999-01-13", erma_utils:format_date({1999,  1, 13})),
     ?assertEqual("1873-02-08", erma_utils:format_date({1873,  2,  8})),
