@@ -172,19 +172,17 @@ offset_limit_test() ->
     ok.
 
 
-%% complex_test() ->
-%%     TAddress = {table, "addresses", [{as, "address"}]},
-%%     TUser = {table, "foo_users",
-%%              [{as, "user"},
-%%               {pk, "userID"},
-%%               {has_many, TAddress, [{fk, "userID"}]}]},
+complex_test() ->
+    TAddress = {table, "addresses", as, "address"},
+    TUser = {table, "foo_users", as, "user"},
 
-%%     Select1 = {select, TUser,
-%%                [{with, TAddress},
-%%                 {where, [{"last_login", lt, "a_week_ago"}]}]},
+    Select = {select, TUser,
+              [{joins, [{left, TAddress, [{pk, "userID"}, {fk, "userID"}]}]},
+               {where, [{"last_login", lt, {date, {2014, 1, 20}}}]}]},
 
-%%     Select2 = {select, TUser,
-%%                [{aggregate, count, "*", "cnt"},
-%%                 {where, [{'or', [{"visits", gt, 20},
-%%                                  {"last_login", "a_year_ago"}]}]}]},
-%%     ok.
+    io:format("~s", [erma:build(Select)]),
+    ?assertEqual(<<"SELECT * FROM foo_users AS user ",
+                   "LEFT JOIN addresses AS address ON address.userID = user.userID ",
+                   "WHERE last_login < '2014-01-20'">>,
+                 erma:build(Select)),
+    ok.

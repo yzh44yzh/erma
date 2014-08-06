@@ -95,3 +95,76 @@ where6_test() ->
                     ]}
                   )),
     ok.
+
+
+%% where7_test() ->
+
+%%         "SELECT \"users\".* FROM \"users\" WHERE (\"users\".\"name\" = ? OR \"users\".\"name\" = ?)"
+%%         (select users
+%%                 (where (or (= :name "chris")
+%%                            (= :name "john"))))
+%%         "SELECT \"users\".* FROM \"users\" WHERE ((\"users\".\"name\" = ?) OR (\"users\".\"name\" = ?))"
+%%         (select users
+%%                 (where (or {:name "chris"}
+%%                            {:name "john"})))
+%%         "SELECT \"users\".* FROM \"users\" WHERE ((\"users\".\"last\" = ? AND \"users\".\"name\" = ?) OR (\"users\".\"email\" = ?) OR \"users\".\"age\" > ?)"
+%%         (select users
+%%                 (where (or {:name "drew"
+%%                             :last "dreward"}
+%%                            {:email "drew@drew.com"}
+%%                            (> :age 10))))
+%%         "SELECT \"users\".* FROM \"users\" WHERE (\"users\".\"x\" < ? OR (\"users\".\"y\" < ? OR \"users\".\"z\" > ?))"
+%%         (select users
+%%                 (where (or (< :x 5)
+%%                            (or (< :y 3)
+%%                                (> :z 4)))))
+%%         "SELECT \"users\".* FROM \"users\" WHERE (\"users\".\"name\" LIKE ?)"
+%%         (select users
+%%                 (where {:name [like "chris"]}))
+%%         "SELECT \"users\".* FROM \"users\" WHERE ((\"users\".\"name\" LIKE ?) OR \"users\".\"name\" LIKE ?)"
+%%         (select users
+%%                 (where (or {:name [like "chris"]}
+%%                            (like :name "john")))))))
+
+
+%% where8_test() ->
+
+%% (deftest not-in
+%%   (defentity the_table)
+%%   (is (= "SELECT \"the_table\".* FROM \"the_table\" WHERE (\"the_table\".\"id\" NOT IN (?, ?, ?))"
+%%          (sql-only
+%%           (-> (select* the_table)
+%%               (where {:id [not-in [1 2 3]]})
+%%               (exec))))))
+
+
+%%    (are [result query] (= result query)
+%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"cool\" IN (?))"
+%%         (select :test (where {:cool [in [1]]}))
+
+%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"cool\" IN (NULL))"
+%%         (select :test (where {:cool [in []]})))))
+
+
+%% where9_test() ->
+
+%% (deftest predicates-used-with-brackets
+%%   (sql-only
+%%    (are [result query] (= result query)
+%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" = ?)"
+%%         (select :test (where {:id [= 1]}))
+%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" < ?)"
+%%         (select :test (where {:id [< 10]}))
+%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" <= ?)"
+%%         (select :test (where {:id [<= 10]}))
+%%         "SELECT \"test\".* FROM \"test\" WHERE ((\"test\".\"id\" BETWEEN ? AND ?))"
+%%         (select :test (where {:id [between [1 10]]}))
+
+%%         ;; clearly this is not an intended use of 'or'!
+%%         "SELECT \"test\".* FROM \"test\" WHERE ((\"test\".\"id\" OR (?, ?, ?)))"
+%%         (select :test (where {:id [or [1 2 3]]}))
+
+%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" NOT IN (?, ?, ?))"
+%%         (select :test (where {:id [not-in [1 2 3]]}))
+%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" <> ?)"
+%%         (select :test (where {:id [not= 1]})))))

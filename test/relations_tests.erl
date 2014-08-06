@@ -172,6 +172,7 @@ relations9_test() ->
                  erma:build(Select)),
     ok.
 
+
 relations10_test() ->
     TUser = {table, "user", as, "u"},
     TEmail = {table, "email", as, "e"},
@@ -189,5 +190,48 @@ relations10_test() ->
                    "LEFT JOIN address AS a ON a.id = u.address_id ",
                    "INNER JOIN email AS e ON e.eid = a.em_id ",
                    "INNER JOIN city ON city.id = a.city_id">>,
+                 erma:build(Select)),
+    ok.
+
+
+relations11_test() ->
+    Select = {select, {table, "blah", as, "bb"},
+              [{fields, ["bb.*"]},
+               {joins, [{left, {table, "blah", as, "bb2"}, [{pk, "cool"}, {fk, "cool2"}]}]}
+              ]},
+    ?assertEqual(<<"SELECT bb.* "
+                   "FROM blah AS bb "
+                   "LEFT JOIN blah AS bb2 "
+                   "ON bb2.cool = bb.cool2">>,
+                 erma:build(Select)),
+    ok.
+
+
+relations12_test() ->
+    Select = {select, {table, "address"},
+              [{fields, ["address.*", "state.*"]},
+               {joins, [{left, {table, "state"}}]},
+               {where, [{"state.status", "?"}]},
+               {order, ["address.id"]}]},
+    ?assertEqual(<<"SELECT address.*, state.* ",
+                   "FROM address ",
+                   "LEFT JOIN state ON state.id = address.state_id ",
+                   "WHERE state.status = ? ",
+                   "ORDER BY address.id ASC">>,
+                 erma:build(Select)),
+    ok.
+
+
+relations13_test() ->
+    Select = {select, {table, "user"},
+              [{fields, ["user.*", "address.*"]},
+               {joins, [{left, {table, "address"}, [{pk, "user_id"}, {fk, "id"}]}]},
+               {where, [{"address.status", "?"}]},
+               {order, ["user.id"]}]},
+    ?assertEqual(<<"SELECT user.*, address.* ",
+                   "FROM user ",
+                   "LEFT JOIN address ON address.user_id = user.id ",
+                   "WHERE address.status = ? ",
+                   "ORDER BY user.id ASC">>,
                  erma:build(Select)),
     ok.

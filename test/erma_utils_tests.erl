@@ -1,4 +1,4 @@
--module(erma_utils_test).
+-module(erma_utils_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 

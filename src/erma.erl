@@ -130,7 +130,11 @@ build_where_entity({Key, '=', Value}) ->
     [Key, " = ", build_where_value(Value)];
 build_where_entity({Key, '>', Value}) ->
     [Key, " > ", build_where_value(Value)];
+build_where_entity({Key, gt, Value}) ->
+    [Key, " > ", build_where_value(Value)];
 build_where_entity({Key, '<', Value}) ->
+    [Key, " < ", build_where_value(Value)];
+build_where_entity({Key, lt, Value}) ->
     [Key, " < ", build_where_value(Value)];
 build_where_entity({Key, '>=', Value}) ->
     [Key, " >= ", build_where_value(Value)];
@@ -156,6 +160,7 @@ build_where_entity({Key, Value}) ->
 build_where_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
 build_where_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
 build_where_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
+build_where_value("?") -> "?";
 build_where_value(Value) when is_integer(Value) -> integer_to_list(Value);
 build_where_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
 build_where_value(Value) when is_list(Value) -> ["'", Value, "'"].
