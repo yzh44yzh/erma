@@ -97,74 +97,75 @@ where6_test() ->
     ok.
 
 
-%% where7_test() ->
+where7_test() ->
+    ?assertEqual(<<"SELECT users.* FROM users WHERE (users.name = ? OR users.name = ?)">>,
+                 erma:build({select, {table, "users"},
+                             [{fields, ["users.*"]},
+                              {where, [{'or', [{"users.name", "?"},
+                                               {"users.name", "?"}]}]}
+                              ]})),
 
-%%         "SELECT \"users\".* FROM \"users\" WHERE (\"users\".\"name\" = ? OR \"users\".\"name\" = ?)"
-%%         (select users
-%%                 (where (or (= :name "chris")
-%%                            (= :name "john"))))
-%%         "SELECT \"users\".* FROM \"users\" WHERE ((\"users\".\"name\" = ?) OR (\"users\".\"name\" = ?))"
-%%         (select users
-%%                 (where (or {:name "chris"}
-%%                            {:name "john"})))
-%%         "SELECT \"users\".* FROM \"users\" WHERE ((\"users\".\"last\" = ? AND \"users\".\"name\" = ?) OR (\"users\".\"email\" = ?) OR \"users\".\"age\" > ?)"
-%%         (select users
-%%                 (where (or {:name "drew"
-%%                             :last "dreward"}
-%%                            {:email "drew@drew.com"}
-%%                            (> :age 10))))
-%%         "SELECT \"users\".* FROM \"users\" WHERE (\"users\".\"x\" < ? OR (\"users\".\"y\" < ? OR \"users\".\"z\" > ?))"
-%%         (select users
-%%                 (where (or (< :x 5)
-%%                            (or (< :y 3)
-%%                                (> :z 4)))))
-%%         "SELECT \"users\".* FROM \"users\" WHERE (\"users\".\"name\" LIKE ?)"
-%%         (select users
-%%                 (where {:name [like "chris"]}))
-%%         "SELECT \"users\".* FROM \"users\" WHERE ((\"users\".\"name\" LIKE ?) OR \"users\".\"name\" LIKE ?)"
-%%         (select users
-%%                 (where (or {:name [like "chris"]}
-%%                            (like :name "john")))))))
+    ?assertEqual(<<"SELECT * FROM users WHERE ((last = ? AND name = ?) OR email = ? OR age > ?)">>,
+                 erma:build({select, {table, "users"},
+                              [{where, [{'or', [{'and', [{"last", "?"}, {"name", "?"}]},
+                                                {"email", "?"},
+                                                {"age", gt, "?"}]}]}
+                               ]})),
 
+    ?assertEqual(<<"SELECT * FROM users WHERE (x < 5 OR (y < 3 OR z > 4))">>,
+                 erma:build({select, {table, "users"},
+                              [{where, [{'or', [{"x", lt, 5},
+                                                {'or', [{"y", lt, 3},
+                                                        {"z", gt, 4}]}]}]}
+                               ]})),
 
-%% where8_test() ->
-
-%% (deftest not-in
-%%   (defentity the_table)
-%%   (is (= "SELECT \"the_table\".* FROM \"the_table\" WHERE (\"the_table\".\"id\" NOT IN (?, ?, ?))"
-%%          (sql-only
-%%           (-> (select* the_table)
-%%               (where {:id [not-in [1 2 3]]})
-%%               (exec))))))
+    ?assertEqual(<<"SELECT * FROM users WHERE (name LIKE ? OR name LIKE ?)">>,
+                 erma:build({select, {table, "users"},
+                              [{where, [{'or', [{"name", like, "?"},
+                                                {"name", like, "?"}]}]}
+                              ]})),
+    ok.
 
 
-%%    (are [result query] (= result query)
-%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"cool\" IN (?))"
-%%         (select :test (where {:cool [in [1]]}))
+where8_test() ->
+    ?assertEqual(<<"SELECT * FROM the_table WHERE id NOT IN (1, 2, 3)">>,
+                 erma:build({select, {table, "the_table"},
+                             [{where, [{"id", not_in, [1,2,3]}]}
+                              ]})),
+    ?assertEqual(<<"SELECT * FROM test WHERE cool IN (77)">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"cool", in, [77]}]}
+                              ]})),
+    ?assertEqual(<<"SELECT * FROM test WHERE cool IN (NULL)">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"cool", in, []}]}
+                              ]})),
+    ?assertEqual(<<"SELECT * FROM test WHERE cool NOT IN (NULL)">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"cool", not_in, []}]}
+                              ]})),
+    ok.
 
-%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"cool\" IN (NULL))"
-%%         (select :test (where {:cool [in []]})))))
 
-
-%% where9_test() ->
-
-%% (deftest predicates-used-with-brackets
-%%   (sql-only
-%%    (are [result query] (= result query)
-%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" = ?)"
-%%         (select :test (where {:id [= 1]}))
-%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" < ?)"
-%%         (select :test (where {:id [< 10]}))
-%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" <= ?)"
-%%         (select :test (where {:id [<= 10]}))
-%%         "SELECT \"test\".* FROM \"test\" WHERE ((\"test\".\"id\" BETWEEN ? AND ?))"
-%%         (select :test (where {:id [between [1 10]]}))
-
-%%         ;; clearly this is not an intended use of 'or'!
-%%         "SELECT \"test\".* FROM \"test\" WHERE ((\"test\".\"id\" OR (?, ?, ?)))"
-%%         (select :test (where {:id [or [1 2 3]]}))
-
-%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" NOT IN (?, ?, ?))"
-%%         (select :test (where {:id [not-in [1 2 3]]}))
-%%         "SELECT \"test\".* FROM \"test\" WHERE (\"test\".\"id\" <> ?)"
-%%         (select :test (where {:id [not= 1]})))))
+where9_test() ->
+    ?assertEqual(<<"SELECT * FROM test WHERE id = 1">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"id", 1}]}
+                              ]})),
+    ?assertEqual(<<"SELECT * FROM test WHERE id <> 1">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"id", '<>', 1}]}
+                              ]})),
+    ?assertEqual(<<"SELECT * FROM test WHERE id < 10">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"id", lt, 10}]}
+                              ]})),
+    ?assertEqual(<<"SELECT * FROM test WHERE id <= 10">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"id", '<=', 10}]}
+                              ]})),
+    ?assertEqual(<<"SELECT * FROM test WHERE id BETWEEN 1 AND 10">>,
+                 erma:build({select, {table, "test"},
+                             [{where, [{"id", between, 1, 10}]}
+                              ]})),
+    ok.

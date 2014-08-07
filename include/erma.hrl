@@ -38,6 +38,6 @@
 
 -type limit_entity() :: {limit, integer()}.
 
--type where_action() :: '=' | '<' | lt | '>' | gt | '>=' | '<=' | like.
+-type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like | in | not_in | between.
 -type where_value() :: boolean() | integer() | float() | string().
 -type order_value() :: name() | {name(), asc} | {name(), desc}.

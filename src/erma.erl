@@ -128,6 +128,8 @@ build_where_entity({'and', WEntities}) ->
     ["(", string:join(W, " AND "), ")"];
 build_where_entity({Key, '=', Value}) ->
     [Key, " = ", build_where_value(Value)];
+build_where_entity({Key, '<>', Value}) ->
+    [Key, " <> ", build_where_value(Value)];
 build_where_entity({Key, '>', Value}) ->
     [Key, " > ", build_where_value(Value)];
 build_where_entity({Key, gt, Value}) ->
@@ -145,13 +147,19 @@ build_where_entity({Key, true}) ->
 build_where_entity({Key, false}) ->
     [Key, " = false"];
 build_where_entity({Key, like, Value}) when is_list(Value) ->
-    [Key, " LIKE '", Value, "'"];
+    [Key, " LIKE ", build_where_value(Value)];
+build_where_entity({Key, in, []}) ->
+    [Key, " IN (NULL)"];
 build_where_entity({Key, in, Values}) when is_list(Values) ->
     V = lists:map(fun build_where_value/1, Values),
     [Key, " IN (", string:join(V, ", "), ")"];
+build_where_entity({Key, not_in, []}) ->
+    [Key, " NOT IN (NULL)"];
+build_where_entity({Key, not_in, Values}) when is_list(Values) ->
+    V = lists:map(fun build_where_value/1, Values),
+    [Key, " NOT IN (", string:join(V, ", "), ")"];
 build_where_entity({Key, between, Value1, Value2}) ->
-    [Key, " BETWEEN ", build_where_value(Value1), % TODO valid syntax?
-     " ", build_where_value(Value2)];
+    [Key, " BETWEEN ", build_where_value(Value1), " AND ", build_where_value(Value2)];
 build_where_entity({Key, Value}) ->
     [Key, " = ", build_where_value(Value)].
 
