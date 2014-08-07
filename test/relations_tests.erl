@@ -235,3 +235,20 @@ relations13_test() ->
                    "ORDER BY user.id ASC">>,
                  erma:build(Select)),
     ok.
+
+
+%%    (is (= "SELECT \"users\".* FROM (\"users\" LEFT JOIN \"user2\" ON \"users\".\"id\" = \"user2\".\"users_id\") LEFT JOIN \"user3\" ON \"users\".\"id\" = \"user3\".\"users_id\""
+%%           (select users
+%%                   (join :user2 (= :users.id :user2.users_id))
+%%                   (join :user3 (= :users.id :user3.users_id)))))))
+
+
+%%         "SELECT \"users\".*, \"address\".*, \"state\".* FROM (\"users\" LEFT JOIN \"address\" ON \"address\".\"users_id\" = \"users\".\"id\") LEFT JOIN \"state\" ON \"state\".\"id\" = \"address\".\"state_id\" WHERE (\"state\".\"state\" = ?) AND (\"address\".\"id\" > ?)"
+%%         (select user2
+%%                 (fields :*)
+%%                 (with address
+%%                       (with state (where {:state "nc"}))
+%%                       (where {:id [> 5]})))
+
+
+%%        "SELECT \"other\".\"author\".*, \"korma\".\"book\".* FROM \"other\".\"author\" LEFT JOIN \"korma\".\"book\" ON \"korma\".\"book\".\"id\" = \"other\".\"author\".\"book_id\""))
