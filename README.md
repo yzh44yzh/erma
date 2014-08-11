@@ -41,6 +41,7 @@ gives
                ]},
     Select1 = erma:append(Select0, [{where, [{"active", true}, {"age", '>', 18}]},
                                     {order, ["created"]}]),
+    erma:build(Select1),
 ```
 
 gives
@@ -63,7 +64,8 @@ gives
     TAddress2 = {table, "address", as, "a2"},
     TAccount = {table, "account"},
     Select = {select, TUser,
-              [{fields, ["email.email", "address1.state", "address2.state", "account.name"]},
+              [{fields, ["email.email", "address1.state",
+                         "address2.state", "account.name"]},
                {joins, [{left, TEmail},
                         {right, TAddress1},
                         {inner, TAddress2},
