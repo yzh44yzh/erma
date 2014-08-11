@@ -1,8 +1,10 @@
 -type name() :: string().
 -type sql() :: binary().
 
--type equery() :: {equery_type(), table(), [entity()]}.
--type equery_type() :: select | insert | update | delete.
+-type equery() :: {select, table(), [entity()]} |
+                  {insert, table(), [name()]} |
+                  {insert, table(), [{name(), value()}]} |
+                  {insert, table(), [name()], [[value()]]}.
 
 -type table() :: {table, name()} | {table, name(), as, name()}.
 
@@ -24,10 +26,10 @@
 -type join_type() :: inner | left | right | full.
 -type join_prop() :: {pk, name()} | {fk, name()}.
 
--type where_entity() :: {where, [{name(), where_value()} |
-                                 {name(), where_action(), where_value()} |
-                                 {name(), in, [where_value()]} |
-                                 {name(), between, where_value(), where_value()} |
+-type where_entity() :: {where, [{name(), value()} |
+                                 {name(), where_action(), value()} |
+                                 {name(), in, [value()]} |
+                                 {name(), between, value(), value()} |
                                  {'not', where_entity()} |
                                  {'and', [where_entity()]} |
                                  {'or', [where_entity()]}]}.
@@ -39,5 +41,8 @@
 -type limit_entity() :: {limit, integer()}.
 
 -type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like | in | not_in | between.
--type where_value() :: boolean() | integer() | float() | string().
+-type value() :: boolean() | integer() | float() | string() |
+                 {date, calendar:date()} |
+                 {time, calendar:time()} |
+                 {datetime, calendar:datetime()}.
 -type order_value() :: name() | {name(), asc} | {name(), desc}.

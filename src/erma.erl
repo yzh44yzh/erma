@@ -20,7 +20,39 @@ build({select, Table, Entities}) ->
       Joins/binary,
       Where/binary,
       Order/binary,
-      OffsetLimit/binary>>.
+      OffsetLimit/binary>>;
+
+build({insert, Table, KV}) ->
+    TableName = case Table of
+                    {table, Name} -> list_to_binary(Name);
+                    {table, Name, as, _} -> list_to_binary(Name)
+                end,
+    {Keys, Values} = lists:unzip(lists:map(
+                                   fun({K, V}) -> {K, lists:flatten(build_value(V))};
+                                      (K) -> {K, "?"}
+                                   end, KV)),
+    Keys2 = list_to_binary(string:join(Keys, ", ")),
+    Values2 = list_to_binary(string:join(Values, ", ")),
+    <<"INSERT INTO ", TableName/binary,
+      " (", Keys2/binary, ") VALUES (", Values2/binary, ")">>;
+
+build({insert, Table, Keys, Values}) ->
+    TableName = case Table of
+                    {table, Name} -> list_to_binary(Name);
+                    {table, Name, as, _} -> list_to_binary(Name)
+                end,
+    Keys2 = list_to_binary(string:join(Keys, ", ")),
+
+    Values2 = lists:map(fun(V1) ->
+                                V2 = lists:map(fun(V) ->
+                                                       lists:flatten(build_value(V))
+                                               end, V1),
+                                lists:flatten(["(", string:join(V2, ", "), ")"])
+                        end, Values),
+    Values3 = list_to_binary(string:join(Values2, ", ")),
+
+    <<"INSERT INTO ", TableName/binary,
+      " (", Keys2/binary, ") VALUES ", Values3/binary>>.
 
 
 -spec append(equery(), [entity()] | entity()) -> equery().
@@ -140,51 +172,51 @@ build_where_entity({'and', WEntities}) ->
         _ -> ["(", string:join(W, " AND "), ")"]
     end;
 build_where_entity({Key, '=', Value}) ->
-    [Key, " = ", build_where_value(Value)];
+    [Key, " = ", build_value(Value)];
 build_where_entity({Key, '<>', Value}) ->
-    [Key, " <> ", build_where_value(Value)];
+    [Key, " <> ", build_value(Value)];
 build_where_entity({Key, '>', Value}) ->
-    [Key, " > ", build_where_value(Value)];
+    [Key, " > ", build_value(Value)];
 build_where_entity({Key, gt, Value}) ->
-    [Key, " > ", build_where_value(Value)];
+    [Key, " > ", build_value(Value)];
 build_where_entity({Key, '<', Value}) ->
-    [Key, " < ", build_where_value(Value)];
+    [Key, " < ", build_value(Value)];
 build_where_entity({Key, lt, Value}) ->
-    [Key, " < ", build_where_value(Value)];
+    [Key, " < ", build_value(Value)];
 build_where_entity({Key, '>=', Value}) ->
-    [Key, " >= ", build_where_value(Value)];
+    [Key, " >= ", build_value(Value)];
 build_where_entity({Key, '<=', Value}) ->
-    [Key, " <= ", build_where_value(Value)];
+    [Key, " <= ", build_value(Value)];
 build_where_entity({Key, true}) ->
     [Key, " = true"];
 build_where_entity({Key, false}) ->
     [Key, " = false"];
 build_where_entity({Key, like, Value}) when is_list(Value) ->
-    [Key, " LIKE ", build_where_value(Value)];
+    [Key, " LIKE ", build_value(Value)];
 build_where_entity({Key, in, []}) ->
     [Key, " IN (NULL)"];
 build_where_entity({Key, in, Values}) when is_list(Values) ->
-    V = lists:map(fun build_where_value/1, Values),
+    V = lists:map(fun build_value/1, Values),
     [Key, " IN (", string:join(V, ", "), ")"];
 build_where_entity({Key, not_in, []}) ->
     [Key, " NOT IN (NULL)"];
 build_where_entity({Key, not_in, Values}) when is_list(Values) ->
-    V = lists:map(fun build_where_value/1, Values),
+    V = lists:map(fun build_value/1, Values),
     [Key, " NOT IN (", string:join(V, ", "), ")"];
 build_where_entity({Key, between, Value1, Value2}) ->
-    [Key, " BETWEEN ", build_where_value(Value1), " AND ", build_where_value(Value2)];
+    [Key, " BETWEEN ", build_value(Value1), " AND ", build_value(Value2)];
 build_where_entity({Key, Value}) ->
-    [Key, " = ", build_where_value(Value)].
+    [Key, " = ", build_value(Value)].
 
 
--spec build_where_value(where_value()) -> iolist().
-build_where_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
-build_where_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
-build_where_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
-build_where_value("?") -> "?";
-build_where_value(Value) when is_integer(Value) -> integer_to_list(Value);
-build_where_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
-build_where_value(Value) when is_list(Value) -> ["'", Value, "'"].
+-spec build_value(value()) -> iolist().
+build_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
+build_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
+build_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
+build_value("?") -> "?";
+build_value(Value) when is_integer(Value) -> integer_to_list(Value);
+build_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
+build_value(Value) when is_list(Value) -> ["'", Value, "'"].
 
 
 -spec build_order([entity()]) -> binary().
