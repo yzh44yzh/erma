@@ -61,7 +61,12 @@ build({update, Table, KV, Where}) ->
                        end, KV),
     Values2 = list_to_binary(string:join(Values, ", ")),
     Where2 = build_where([Where]),
-    <<"UPDATE ", TableName/binary, " SET ", Values2/binary, Where2/binary>>.
+    <<"UPDATE ", TableName/binary, " SET ", Values2/binary, Where2/binary>>;
+
+build({delete, Table, Where}) ->
+    TableName = get_table_name(Table),
+    Where2 = build_where([Where]),
+    <<"DELETE FROM ", TableName/binary, Where2/binary>>.
 
 
 -spec append(equery(), [entity()] | entity()) -> equery().

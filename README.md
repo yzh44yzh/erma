@@ -114,12 +114,21 @@ gives
 <<"UPDATE users SET first = 'Chris', last = 'Granger' WHERE id = 3">>,
 ```
 
-See [unit tests](test/erma_tests.erl) for more samples.
+### Delete
+
+```erlang
+erma:build({delete, {table, "users"}, {where, [{"id", 3}]}})
+```
+gives
+```erlang
+<<"DELETE FROM users WHERE id = 3">>
+```
+
+See [unit tests](test/) for more samples.
 
 
 ## Not implemented yet
 
- - delete
  - escape tables and fields name
  - distinct
  - aggregate functions
