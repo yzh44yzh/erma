@@ -101,12 +101,24 @@ gives
            "VALUES ('Chris', 'Granger'), ('Bob', 'Dou'), ('Helen', 'Rice')">>
 ```
 
+### Update
+
+```erlang
+erma:build({update, {table, "users"},
+            [{"first", "Chris"},
+             {"last", "Granger"}],
+            {where, [{"id", 3}]}})
+```
+gives
+```erlang
+<<"UPDATE users SET first = 'Chris', last = 'Granger' WHERE id = 3">>,
+```
+
 See [unit tests](test/erma_tests.erl) for more samples.
 
 
 ## Not implemented yet
 
- - update
  - delete
  - escape tables and fields name
  - distinct
