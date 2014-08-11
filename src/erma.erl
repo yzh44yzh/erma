@@ -35,8 +35,11 @@ build({insert, Table, KV}) ->
 
 build({insert, Table, Keys, Values}) ->
     TableName = get_table_name(Table),
-    Keys2 = list_to_binary(string:join(Keys, ", ")),
-
+    Keys2 = case Keys of
+                [] -> <<>>;
+                _ -> K = list_to_binary(string:join(Keys, ", ")),
+                     <<" (", K/binary, ")">>
+            end,
     Values2 = lists:map(fun(V1) ->
                                 V2 = lists:map(fun(V) ->
                                                        lists:flatten(build_value(V))
@@ -46,7 +49,7 @@ build({insert, Table, Keys, Values}) ->
     Values3 = list_to_binary(string:join(Values2, ", ")),
 
     <<"INSERT INTO ", TableName/binary,
-      " (", Keys2/binary, ") VALUES ", Values3/binary>>;
+      Keys2/binary, " VALUES ", Values3/binary>>;
 
 build({update, Table, KV}) -> build({update, Table, KV, {where, []}});
 build({update, Table, KV, Where}) ->
