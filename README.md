@@ -12,53 +12,49 @@ IT IS JUST PROTOTYPE, NOT READY TO USE.
 
 ## Samples
 
-Simple select:
+### Simple select
 
 ```erlang
     TUser = {table, "user"},
     TAddress = {table, "address"},
-
     Select = {select, TUser,
              [{joins, [{left, TAddress}]},
               {fields, ["first_name", "last_name", "address.state"]}
              ]},
-    ?assertEqual(<<"SELECT first_name, last_name, address.state ",
-                   "FROM user ",
-                   "LEFT JOIN address ON address.id = user.address_id">>,
-                 erma:build(Select)),
+    erma:build(Select),
 ```
 
-Append more details to select:
+gives
+
+```erlang
+<<"SELECT first_name, last_name, address.state ",
+  "FROM user ",
+  "LEFT JOIN address ON address.id = user.address_id">>
+```
+
+### Append more details to select
 
 ```erlang
     Select0 = {select, {table, "user"},
                [{fields, ["id", "username"]},
                 {where, [{"email", like, "*@gmail.com"}]}
                ]},
-    ?assertEqual(<<"SELECT id, username ",
-                   "FROM user ",
-                   "WHERE email LIKE '*@gmail.com'">>,
-                 erma:build(Select0)),
-
     Select1 = erma:append(Select0, [{where, [{"active", true}, {"age", '>', 18}]},
                                     {order, ["created"]}]),
-    ?assertEqual(
-       {select, {table, "user"},
-        [{fields, ["id", "username"]},
-         {where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]},
-         {order, ["created"]}
-        ]},
-       Select1),
-    ?assertEqual(<<"SELECT id, username ",
-                   "FROM user ",
-                   "WHERE email LIKE '*@gmail.com' ",
-                   "AND active = true ",
-                   "AND age > 18 ",
-                   "ORDER BY created ASC">>,
-                 erma:build(Select1))
 ```
 
-Join tables:
+gives
+
+```erlang
+<<"SELECT id, username ",
+  "FROM user ",
+  "WHERE email LIKE '*@gmail.com' ",
+  "AND active = true ",
+  "AND age > 18 ",
+  "ORDER BY created ASC">>
+```
+
+### Join tables
 
 ```erlang
     TUser = {table, "user"},
@@ -66,7 +62,6 @@ Join tables:
     TAddress1 = {table, "address", as, "a1"},
     TAddress2 = {table, "address", as, "a2"},
     TAccount = {table, "account"},
-
     Select = {select, TUser,
               [{fields, ["email.email", "address1.state", "address2.state", "account.name"]},
                {joins, [{left, TEmail},
@@ -74,14 +69,18 @@ Join tables:
                         {inner, TAddress2},
                         {full, TAccount}]}
               ]},
+    erma:build(Select)),
+```
 
-    ?assertEqual(<<"SELECT email.email, address1.state, address2.state, account.name ",
-                   "FROM user ",
-                   "LEFT JOIN email ON email.id = user.email_id ",
-                   "RIGHT JOIN address AS a1 ON a1.id = user.address_id ",
-                   "INNER JOIN address AS a2 ON a2.id = user.address_id ",
-                   "FULL JOIN account ON account.id = user.account_id">>,
-                 erma:build(Select))
+gives
+
+```erlang
+<<"SELECT email.email, address1.state, address2.state, account.name ",
+  "FROM user ",
+  "LEFT JOIN email ON email.id = user.email_id ",
+  "RIGHT JOIN address AS a1 ON a1.id = user.address_id ",
+  "INNER JOIN address AS a2 ON a2.id = user.address_id ",
+  "FULL JOIN account ON account.id = user.account_id">>
 ```
 
 See [unit tests](test/erma_tests.erl) for more samples.
