@@ -83,12 +83,36 @@ gives
   "FULL JOIN account ON account.id = user.account_id">>
 ```
 
+### Insert
+
+```erlang
+    erma:build({insert, {table, "users"},
+                [{"first", "Bob"},
+                 {"last", "Dou"},
+                 {"age", 25}]})
+```
+gives
+
+```erlang
+<<"INSERT INTO users (first, last, age) VALUES ('Bob', 'Dou', 25)">>
+```
+
+```erlang
+    erma:build({insert, {table, "users"},
+                ["first", "last"],
+                [["Chris", "Granger"], ["Bob", "Dou"], ["Helen", "Rice"]]})
+```
+gives
+```erlang
+<<"INSERT INTO users (first, last) ",
+           "VALUES ('Chris', 'Granger'), ('Bob', 'Dou'), ('Helen', 'Rice')">>
+```
+
 See [unit tests](test/erma_tests.erl) for more samples.
 
 
 ## Not implemented yet
 
- - insert
  - update
  - delete
  - escape tables and fields name
