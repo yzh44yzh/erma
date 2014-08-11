@@ -13,13 +13,14 @@ select1_test() ->
                               {order, ["created"]},
                               {limit, 5},
                               {offset, 3}]})),
+
     ?assertEqual(<<"SELECT email.* FROM email ",
-                   "WHERE (email.email LIKE '%@gmail.com' AND email.users_id = 1)">>,
+                   "WHERE (email.email LIKE '%@gmail.com' AND email.user_id = 1)">>,
                  erma:build({select, {table, "email"},
                              [{fields, ["email.*"]},
                               {where, [{'and', [{"email.email", like, "%@gmail.com"},
                                                 {"email.user_id", 1}]}]}
-                              ]})),
+                             ]})),
     ok.
 
 

@@ -237,18 +237,25 @@ relations13_test() ->
     ok.
 
 
-%%    (is (= "SELECT \"users\".* FROM (\"users\" LEFT JOIN \"user2\" ON \"users\".\"id\" = \"user2\".\"users_id\") LEFT JOIN \"user3\" ON \"users\".\"id\" = \"user3\".\"users_id\""
-%%           (select users
-%%                   (join :user2 (= :users.id :user2.users_id))
-%%                   (join :user3 (= :users.id :user3.users_id)))))))
+relations14_test() ->
+    Select = {select, {table, "users", as, "u"},
+              [{joins, [{left, {table, "users", as, "u2"}},
+                        {left, {table, "users", as, "u3"}}]}
+              ]},
+    ?assertEqual(<<"SELECT * FROM users AS u ",
+                   "LEFT JOIN users AS u2 ON u2.id = u.users_id ",
+                   "LEFT JOIN users AS u3 ON u3.id = u.users_id">>,
+                 erma:build(Select)),
 
+    Select2 = {select, {table, "users", as, "u"},
+               [{joins, [{left, {table, "address", as, "a"}, [{pk, "users_id"}, {fk, "id"}]},
+                         {left, {table, "state", as, "s"}, {table, "address", as, "a"}}]},
+                {where, [{'and', [{"s.state", "nc"}, {"a.id", gt, 5}]}]},
+                {fields, ["u.*", "a.*", "s.*"]}]},
+    ?assertEqual(<<"SELECT u.*, a.*, s.* FROM users AS u ",
+                   "LEFT JOIN address AS a ON a.users_id = u.id ",
+                   "LEFT JOIN state AS s ON s.id = a.state_id ",
+                   "WHERE (s.state = 'nc' AND a.id > 5)">>,
+                 erma:build(Select2)),
 
-%%         "SELECT \"users\".*, \"address\".*, \"state\".* FROM (\"users\" LEFT JOIN \"address\" ON \"address\".\"users_id\" = \"users\".\"id\") LEFT JOIN \"state\" ON \"state\".\"id\" = \"address\".\"state_id\" WHERE (\"state\".\"state\" = ?) AND (\"address\".\"id\" > ?)"
-%%         (select user2
-%%                 (fields :*)
-%%                 (with address
-%%                       (with state (where {:state "nc"}))
-%%                       (where {:id [> 5]})))
-
-
-%%        "SELECT \"other\".\"author\".*, \"korma\".\"book\".* FROM \"other\".\"author\" LEFT JOIN \"korma\".\"book\" ON \"korma\".\"book\".\"id\" = \"other\".\"author\".\"book_id\""))
+    ok.
