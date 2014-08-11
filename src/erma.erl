@@ -50,6 +50,7 @@ build_from({table, Name, as, Alias}) ->
 build_joins(MainTable, Entities) ->
     case proplists:get_value(joins, Entities) of
         undefined -> <<>>;
+        [] -> <<>>;
         JEntities -> J1 = lists:map(fun(Join) ->
                                             lists:flatten(build_join_entity(MainTable, Join))
                                     end, JEntities),
@@ -110,22 +111,34 @@ build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
 build_where(Entities) ->
     case proplists:get_value(where, Entities) of
         undefined -> <<>>;
+        [] -> <<>>;
         WEntities -> W1 = lists:map(fun(Entity) ->
                                             lists:flatten(build_where_entity(Entity))
                                     end, WEntities),
-                     W2 = list_to_binary(string:join(W1, " AND ")),
-                     <<" WHERE ", W2/binary>>
+                     case lists:flatten(W1) of
+                         [] -> <<>>;
+                         _ -> W2 = list_to_binary(string:join(W1, " AND ")),
+                              <<" WHERE ", W2/binary>>
+                     end
     end.
 
 -spec build_where_entity(where_entity()) -> iolist().
 build_where_entity({'not', WEntity}) ->
     ["(NOT ", build_where_entity(WEntity), ")"];
+build_where_entity({'or', []}) -> [];
 build_where_entity({'or', WEntities}) ->
     W = lists:map(fun build_where_entity/1, WEntities),
-    ["(", string:join(W, " OR "), ")"];
+    case lists:flatten(W) of
+        [] -> [];
+        _ -> ["(", string:join(W, " OR "), ")"]
+    end;
+build_where_entity({'and', []}) -> [];
 build_where_entity({'and', WEntities}) ->
     W = lists:map(fun build_where_entity/1, WEntities),
-    ["(", string:join(W, " AND "), ")"];
+    case lists:flatten(W) of
+        [] -> [];
+        _ -> ["(", string:join(W, " AND "), ")"]
+    end;
 build_where_entity({Key, '=', Value}) ->
     [Key, " = ", build_where_value(Value)];
 build_where_entity({Key, '<>', Value}) ->
@@ -178,6 +191,7 @@ build_where_value(Value) when is_list(Value) -> ["'", Value, "'"].
 build_order(Entities) ->
     case proplists:get_value(order, Entities) of
         undefined -> <<>>;
+        [] -> <<>>;
         OEntities -> O1 = lists:map(fun(Entity) ->
                                             lists:flatten(build_order_entity(Entity))
                                     end, OEntities),
