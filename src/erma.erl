@@ -23,10 +23,7 @@ build({select, Table, Entities}) ->
       OffsetLimit/binary>>;
 
 build({insert, Table, KV}) ->
-    TableName = case Table of
-                    {table, Name} -> list_to_binary(Name);
-                    {table, Name, as, _} -> list_to_binary(Name)
-                end,
+    TableName = get_table_name(Table),
     {Keys, Values} = lists:unzip(lists:map(
                                    fun({K, V}) -> {K, lists:flatten(build_value(V))};
                                       (K) -> {K, "?"}
@@ -37,10 +34,7 @@ build({insert, Table, KV}) ->
       " (", Keys2/binary, ") VALUES (", Values2/binary, ")">>;
 
 build({insert, Table, Keys, Values}) ->
-    TableName = case Table of
-                    {table, Name} -> list_to_binary(Name);
-                    {table, Name, as, _} -> list_to_binary(Name)
-                end,
+    TableName = get_table_name(Table),
     Keys2 = list_to_binary(string:join(Keys, ", ")),
 
     Values2 = lists:map(fun(V1) ->
@@ -52,7 +46,19 @@ build({insert, Table, Keys, Values}) ->
     Values3 = list_to_binary(string:join(Values2, ", ")),
 
     <<"INSERT INTO ", TableName/binary,
-      " (", Keys2/binary, ") VALUES ", Values3/binary>>.
+      " (", Keys2/binary, ") VALUES ", Values3/binary>>;
+
+build({update, Table, KV}) -> build({update, Table, KV, {where, []}});
+build({update, Table, KV, Where}) ->
+    TableName = get_table_name(Table),
+    Values = lists:map(fun({K, V}) ->
+                               lists:flatten([list_to_binary(K), " = ", build_value(V)]);
+                          (K) ->
+                               lists:flatten([list_to_binary(K), " = ?"])
+                       end, KV),
+    Values2 = list_to_binary(string:join(Values, ", ")),
+    Where2 = build_where([Where]),
+    <<"UPDATE ", TableName/binary, " SET ", Values2/binary, Where2/binary>>.
 
 
 -spec append(equery(), [entity()] | entity()) -> equery().
@@ -62,6 +68,11 @@ append(Query, NewEntity) -> append(Query, [NewEntity]).
 
 
 %%% inner functions
+
+-spec get_table_name(table()) -> binary().
+get_table_name({table, Name}) -> list_to_binary(Name);
+get_table_name({table, Name, as, _}) -> list_to_binary(Name).
+
 
 -spec build_fields([entity()]) -> binary().
 build_fields(Entities) ->

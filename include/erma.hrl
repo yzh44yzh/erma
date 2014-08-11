@@ -4,7 +4,11 @@
 -type equery() :: {select, table(), [entity()]} |
                   {insert, table(), [name()]} |
                   {insert, table(), [{name(), value()}]} |
-                  {insert, table(), [name()], [[value()]]}.
+                  {insert, table(), [name()], [[value()]]} |
+                  {update, table(), [name()]} |
+                  {update, table(), [{name(), value()}]} |
+                  {update, table(), [name()], where_entity()} |
+                  {update, table(), [{name(), value()}], where_entity()}.
 
 -type table() :: {table, name()} | {table, name(), as, name()}.
 
