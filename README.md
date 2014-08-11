@@ -13,17 +13,15 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
 ### Simple select
 
 ```erlang
-    TUser = {table, "user"},
-    TAddress = {table, "address"},
-    Select = {select, TUser,
-             [{joins, [{left, TAddress}]},
-              {fields, ["first_name", "last_name", "address.state"]}
-             ]},
-    erma:build(Select),
+TUser = {table, "user"},
+TAddress = {table, "address"},
+Select = {select, TUser,
+          [{joins, [{left, TAddress}]},
+           {fields, ["first_name", "last_name", "address.state"]}
+          ]},
+erma:build(Select)
 ```
-
 gives
-
 ```erlang
 <<"SELECT first_name, last_name, address.state ",
   "FROM user ",
@@ -33,17 +31,15 @@ gives
 ### Append more details to select
 
 ```erlang
-    Select0 = {select, {table, "user"},
-               [{fields, ["id", "username"]},
-                {where, [{"email", like, "*@gmail.com"}]}
-               ]},
-    Select1 = erma:append(Select0, [{where, [{"active", true}, {"age", '>', 18}]},
-                                    {order, ["created"]}]),
-    erma:build(Select1),
+Select0 = {select, {table, "user"},
+           [{fields, ["id", "username"]},
+            {where, [{"email", like, "*@gmail.com"}]}
+           ]},
+Select1 = erma:append(Select0, [{where, [{"active", true}, {"age", '>', 18}]},
+                                {order, ["created"]}]),
+erma:build(Select1)
 ```
-
 gives
-
 ```erlang
 <<"SELECT id, username ",
   "FROM user ",
@@ -56,24 +52,22 @@ gives
 ### Join tables
 
 ```erlang
-    TUser = {table, "user"},
-    TEmail = {table, "email"},
-    TAddress1 = {table, "address", as, "a1"},
-    TAddress2 = {table, "address", as, "a2"},
-    TAccount = {table, "account"},
-    Select = {select, TUser,
-              [{fields, ["email.email", "address1.state",
-                         "address2.state", "account.name"]},
-               {joins, [{left, TEmail},
-                        {right, TAddress1},
-                        {inner, TAddress2},
-                        {full, TAccount}]}
-              ]},
-    erma:build(Select)),
+TUser = {table, "user"},
+TEmail = {table, "email"},
+TAddress1 = {table, "address", as, "a1"},
+TAddress2 = {table, "address", as, "a2"},
+TAccount = {table, "account"},
+Select = {select, TUser,
+          [{fields, ["email.email", "address1.state",
+                     "address2.state", "account.name"]},
+           {joins, [{left, TEmail},
+                    {right, TAddress1},
+                    {inner, TAddress2},
+                    {full, TAccount}]}
+          ]},
+erma:build(Select))
 ```
-
 gives
-
 ```erlang
 <<"SELECT email.email, address1.state, address2.state, account.name ",
   "FROM user ",
@@ -86,21 +80,20 @@ gives
 ### Insert
 
 ```erlang
-    erma:build({insert, {table, "users"},
-                [{"first", "Bob"},
-                 {"last", "Dou"},
-                 {"age", 25}]})
+erma:build({insert, {table, "users"},
+            [{"first", "Bob"},
+             {"last", "Dou"},
+             {"age", 25}]})
 ```
 gives
-
 ```erlang
 <<"INSERT INTO users (first, last, age) VALUES ('Bob', 'Dou', 25)">>
 ```
 
 ```erlang
-    erma:build({insert, {table, "users"},
-                ["first", "last"],
-                [["Chris", "Granger"], ["Bob", "Dou"], ["Helen", "Rice"]]})
+erma:build({insert, {table, "users"},
+            ["first", "last"],
+            [["Chris", "Granger"], ["Bob", "Dou"], ["Helen", "Rice"]]})
 ```
 gives
 ```erlang
