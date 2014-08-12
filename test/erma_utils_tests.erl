@@ -5,6 +5,33 @@
 
 %% eunit tests
 
+valid_name_test() ->
+    ?assertEqual(false, erma_utils:valid_name("user")),
+    ?assertEqual(false, erma_utils:valid_name("alias")),
+    ?assertEqual(false, erma_utils:valid_name("limit")),
+    ?assertEqual(false, erma_utils:valid_name("like")),
+    ?assertEqual(false, erma_utils:valid_name("where")),
+    ?assertEqual(false, erma_utils:valid_name("123user")),
+    ?assertEqual(true, erma_utils:valid_name("user123")),
+    ?assertEqual(true, erma_utils:valid_name("some_user")),
+    ?assertEqual(true, erma_utils:valid_name("_user")),
+    ?assertEqual(false, erma_utils:valid_name("user!")),
+    ?assertEqual(false, erma_utils:valid_name("user@boo")),
+    ok.
+
+escape_name_test() ->
+    ?assertEqual("`user`", erma_utils:escape_name("user")),
+    ?assertEqual("`like`", erma_utils:escape_name("like")),
+    ?assertEqual("some_user", erma_utils:escape_name("some_user")),
+    ?assertEqual("_some_other_user", erma_utils:escape_name("_some_other_user")),
+    ?assertEqual("users.id", erma_utils:escape_name("users.id")),
+    ?assertEqual("users.*", erma_utils:escape_name("users.*")),
+    ?assertEqual("`user`.id", erma_utils:escape_name("user.id")),
+    ?assertEqual("`user`.*", erma_utils:escape_name("user.*")),
+    ?assertEqual("`user`.`where`", erma_utils:escape_name("user.where")),
+    ?assertEqual("my_user.`where`", erma_utils:escape_name("my_user.where")),
+    ok.
+
 format_date_test() ->
     ?assertEqual("2014-08-05", erma_utils:format_date({2014,  8,  5})),
     ?assertEqual("2000-12-15", erma_utils:format_date({2000, 12, 15})),
