@@ -1,4 +1,9 @@
 -type name() :: string().
+-type value() :: boolean() | integer() | float() | string() |
+                 {date, calendar:date()} |
+                 {time, calendar:time()} |
+                 {datetime, calendar:datetime()}.
+
 -type sql() :: binary().
 
 -type equery() :: {select, table(), [entity()]} |
@@ -31,26 +36,23 @@
 -type join_type() :: inner | left | right | full.
 -type join_prop() :: {pk, name()} | {fk, name()}.
 
--type where_entity() :: {where, [{name(), value()} |
-                                 {name(), where_action(), value()} |
-                                 {name(), in, [value()]} |
-                                 {name(), between, value(), value()} |
-                                 {'not', where_entity()} |
-                                 {'and', [where_entity()]} |
-                                 {'or', [where_entity()]}]}.
+-type where_entity() :: {where, [where_value()]}.
+-type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like | in | not_in | between.
+-type where_value() :: {name(), value()} |
+                       {name(), where_action(), value()} |
+                       {name(), in, [value()]} |
+                       {name(), between, value(), value()} |
+                       {'not', where_entity()} |
+                       {'and', [where_entity()]} |
+                       {'or', [where_entity()]}.
 
 -type order_entity() :: {order, order_value() | [order_value()]}.
+-type order_value() :: name() | {name(), asc} | {name(), desc}.
 
 -type offset_entity() :: {offset, integer()}.
 
 -type limit_entity() :: {limit, integer()}.
 
--type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like | in | not_in | between.
--type value() :: boolean() | integer() | float() | string() |
-                 {date, calendar:date()} |
-                 {time, calendar:time()} |
-                 {datetime, calendar:datetime()}.
--type order_value() :: name() | {name(), asc} | {name(), desc}.
 
 
 -define(SQL_RESERVED_WORDS,

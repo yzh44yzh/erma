@@ -22,16 +22,17 @@ valid_name(Name) ->
     end.
 
 
--spec escape_name(string()) -> string().
+-spec escape_name(string()) -> iolist().
 escape_name(Name) ->
+    lists:flatten(
       case string:tokens(Name, ".") of
-          [N1, "*"] -> escape_name(N1) ++ ".*";
-          [N1, N2] -> escape_name(N1) ++ "." ++ escape_name(N2);
+          [N1, "*"] -> [escape_name(N1), ".*"];
+          [N1, N2] -> [escape_name(N1), ".", escape_name(N2)];
           _ -> case valid_name(Name) of
                    true -> Name;
-                   false -> "`" ++ Name ++ "`"
+                   false -> ["`", Name, "`"]
                end
-      end.
+      end).
 
 
 -spec format_date(calendar:date()) -> string().

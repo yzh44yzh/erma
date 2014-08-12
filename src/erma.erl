@@ -182,7 +182,7 @@ build_where(Entities) ->
                      end
     end.
 
--spec build_where_entity(where_entity()) -> iolist().
+-spec build_where_entity(where_value()) -> iolist().
 build_where_entity({'not', WEntity}) ->
     ["(NOT ", build_where_entity(WEntity), ")"];
 build_where_entity({'or', []}) -> [];
@@ -260,7 +260,7 @@ build_order(Entities) ->
     end.
 
 
--spec build_order_entity(order_entity()) -> iolist().
+-spec build_order_entity(order_value()) -> iolist().
 build_order_entity({Field, asc}) -> [erma_utils:escape_name(Field), " ASC"];
 build_order_entity({Field, desc}) -> [erma_utils:escape_name(Field), " DESC"];
 build_order_entity(Field) -> [erma_utils:escape_name(Field), " ASC"].
