@@ -25,8 +25,9 @@ build({select, Table, Entities}) ->
 build({insert, Table, KV}) ->
     TableName = get_table_name(Table),
     {Keys, Values} = lists:unzip(lists:map(
-                                   fun({K, V}) -> {K, lists:flatten(build_value(V))};
-                                      (K) -> {K, "?"}
+                                   fun({K, V}) -> {erma_utils:escape_name(K),
+                                                   lists:flatten(build_value(V))};
+                                      (K) -> {erma_utils:escape_name(K), "?"}
                                    end, KV)),
     Keys2 = list_to_binary(string:join(Keys, ", ")),
     Values2 = list_to_binary(string:join(Values, ", ")),
@@ -37,8 +38,9 @@ build({insert, Table, Keys, Values}) ->
     TableName = get_table_name(Table),
     Keys2 = case Keys of
                 [] -> <<>>;
-                _ -> K = list_to_binary(string:join(Keys, ", ")),
-                     <<" (", K/binary, ")">>
+                _ -> K1 = lists:map(fun erma_utils:escape_name/1, Keys),
+                     K2 = list_to_binary(string:join(K1, ", ")),
+                     <<" (", K2/binary, ")">>
             end,
     Values2 = lists:map(fun(V1) ->
                                 V2 = lists:map(fun(V) ->
@@ -55,9 +57,11 @@ build({update, Table, KV}) -> build({update, Table, KV, {where, []}});
 build({update, Table, KV, Where}) ->
     TableName = get_table_name(Table),
     Values = lists:map(fun({K, V}) ->
-                               lists:flatten([list_to_binary(K), " = ", build_value(V)]);
+                               lists:flatten([list_to_binary(erma_utils:escape_name(K)),
+                                              " = ", build_value(V)]);
                           (K) ->
-                               lists:flatten([list_to_binary(K), " = ?"])
+                               lists:flatten([list_to_binary(erma_utils:escape_name(K)),
+                                              " = ?"])
                        end, KV),
     Values2 = list_to_binary(string:join(Values, ", ")),
     Where2 = build_where([Where]),
@@ -78,8 +82,8 @@ append(Query, NewEntity) -> append(Query, [NewEntity]).
 %%% inner functions
 
 -spec get_table_name(table()) -> binary().
-get_table_name({table, Name}) -> list_to_binary(Name);
-get_table_name({table, Name, as, _}) -> list_to_binary(Name).
+get_table_name({table, Name}) -> list_to_binary(erma_utils:escape_name(Name));
+get_table_name({table, Name, as, _}) -> list_to_binary(erma_utils:escape_name(Name)).
 
 
 -spec build_fields([entity()]) -> binary().
@@ -87,14 +91,16 @@ build_fields(Entities) ->
     list_to_binary(
       case proplists:get_value(fields, Entities) of
           undefined -> "*";
-          List -> string:join(List, ", ")
+          List -> List2 = lists:map(fun erma_utils:escape_name/1, List),
+                  string:join(List2, ", ")
       end).
 
 
 -spec build_from(table()) -> binary().
-build_from({table, Name}) -> list_to_binary(" FROM " ++ Name);
+build_from({table, Name}) -> list_to_binary(" FROM " ++ erma_utils:escape_name(Name));
 build_from({table, Name, as, Alias}) ->
-    list_to_binary(lists:flatten([" FROM ", Name, " AS ", Alias])).
+    list_to_binary(lists:flatten([" FROM ", erma_utils:escape_name(Name),
+                                  " AS ", erma_utils:escape_name(Alias)])).
 
 
 -spec build_joins(table(), [entity()]) -> binary().
@@ -134,26 +140,29 @@ build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
            end,
     Table =
         case JoinTable of
-            {table, Name3} -> Name3;
-            {table, Name3, as, Alias3} -> [Name3, " AS ", Alias3]
+            {table, Name1} -> erma_utils:escape_name(Name1);
+            {table, Name1, as, Alias1} -> [erma_utils:escape_name(Name1),
+                                           " AS ", erma_utils:escape_name(Alias1)]
         end,
     ToAlias =
         case ToTable of
-            {table, Name1} -> Name1;
-            {table, _, as, Alias1} -> Alias1
+            {table, Name2} -> erma_utils:escape_name(Name2);
+            {table, _, as, Alias2} -> erma_utils:escape_name(Alias2)
         end,
     {JoinName, JoinAlias} =
         case JoinTable of
-            {table, Name2} -> {Name2, Name2};
-            {table, Name2, as, Alias2} -> {Name2, Alias2}
+            {table, Name3} ->
+                {Name3, erma_utils:escape_name(Name3)};
+            {table, Name4, as, Alias4} ->
+                {Name4, erma_utils:escape_name(Alias4)}
         end,
     PrimaryKey = case proplists:get_value(pk, JoinProps) of
                      undefined -> "id";
-                     Pk -> Pk
+                     Pk -> erma_utils:escape_name(Pk)
                  end,
     ForeignKey = case proplists:get_value(fk, JoinProps) of
-                     undefined -> [JoinName, "_id"];
-                     Fk -> Fk
+                     undefined -> erma_utils:escape_name(JoinName ++ "_id");
+                     Fk -> erma_utils:escape_name(Fk)
                  end,
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
 
@@ -191,41 +200,41 @@ build_where_entity({'and', WEntities}) ->
         _ -> ["(", string:join(W, " AND "), ")"]
     end;
 build_where_entity({Key, '=', Value}) ->
-    [Key, " = ", build_value(Value)];
+    [erma_utils:escape_name(Key), " = ", build_value(Value)];
 build_where_entity({Key, '<>', Value}) ->
-    [Key, " <> ", build_value(Value)];
+    [erma_utils:escape_name(Key), " <> ", build_value(Value)];
 build_where_entity({Key, '>', Value}) ->
-    [Key, " > ", build_value(Value)];
+    [erma_utils:escape_name(Key), " > ", build_value(Value)];
 build_where_entity({Key, gt, Value}) ->
-    [Key, " > ", build_value(Value)];
+    [erma_utils:escape_name(Key), " > ", build_value(Value)];
 build_where_entity({Key, '<', Value}) ->
-    [Key, " < ", build_value(Value)];
+    [erma_utils:escape_name(Key), " < ", build_value(Value)];
 build_where_entity({Key, lt, Value}) ->
-    [Key, " < ", build_value(Value)];
+    [erma_utils:escape_name(Key), " < ", build_value(Value)];
 build_where_entity({Key, '>=', Value}) ->
-    [Key, " >= ", build_value(Value)];
+    [erma_utils:escape_name(Key), " >= ", build_value(Value)];
 build_where_entity({Key, '<=', Value}) ->
-    [Key, " <= ", build_value(Value)];
+    [erma_utils:escape_name(Key), " <= ", build_value(Value)];
 build_where_entity({Key, true}) ->
-    [Key, " = true"];
+    [erma_utils:escape_name(Key), " = true"];
 build_where_entity({Key, false}) ->
-    [Key, " = false"];
+    [erma_utils:escape_name(Key), " = false"];
 build_where_entity({Key, like, Value}) when is_list(Value) ->
-    [Key, " LIKE ", build_value(Value)];
+    [erma_utils:escape_name(Key), " LIKE ", build_value(Value)];
 build_where_entity({Key, in, []}) ->
-    [Key, " IN (NULL)"];
+    [erma_utils:escape_name(Key), " IN (NULL)"];
 build_where_entity({Key, in, Values}) when is_list(Values) ->
     V = lists:map(fun build_value/1, Values),
-    [Key, " IN (", string:join(V, ", "), ")"];
+    [erma_utils:escape_name(Key), " IN (", string:join(V, ", "), ")"];
 build_where_entity({Key, not_in, []}) ->
-    [Key, " NOT IN (NULL)"];
+    [erma_utils:escape_name(Key), " NOT IN (NULL)"];
 build_where_entity({Key, not_in, Values}) when is_list(Values) ->
     V = lists:map(fun build_value/1, Values),
-    [Key, " NOT IN (", string:join(V, ", "), ")"];
+    [erma_utils:escape_name(Key), " NOT IN (", string:join(V, ", "), ")"];
 build_where_entity({Key, between, Value1, Value2}) ->
-    [Key, " BETWEEN ", build_value(Value1), " AND ", build_value(Value2)];
+    [erma_utils:escape_name(Key), " BETWEEN ", build_value(Value1), " AND ", build_value(Value2)];
 build_where_entity({Key, Value}) ->
-    [Key, " = ", build_value(Value)].
+    [erma_utils:escape_name(Key), " = ", build_value(Value)].
 
 
 -spec build_value(value()) -> iolist().
@@ -252,9 +261,9 @@ build_order(Entities) ->
 
 
 -spec build_order_entity(order_entity()) -> iolist().
-build_order_entity({Field, asc}) -> [Field, " ASC"];
-build_order_entity({Field, desc}) -> [Field, " DESC"];
-build_order_entity(Field) -> [Field, " ASC"].
+build_order_entity({Field, asc}) -> [erma_utils:escape_name(Field), " ASC"];
+build_order_entity({Field, desc}) -> [erma_utils:escape_name(Field), " DESC"];
+build_order_entity(Field) -> [erma_utils:escape_name(Field), " ASC"].
 
 
 -spec build_offset_limit([entity()]) -> binary().

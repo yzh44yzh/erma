@@ -24,15 +24,14 @@ valid_name(Name) ->
 
 -spec escape_name(string()) -> string().
 escape_name(Name) ->
-    lists:flatten(
       case string:tokens(Name, ".") of
-          [N1, "*"] -> [escape_name(N1), ".*"];
-          [N1, N2] -> [escape_name(N1), ".", escape_name(N2)];
+          [N1, "*"] -> escape_name(N1) ++ ".*";
+          [N1, N2] -> escape_name(N1) ++ "." ++ escape_name(N2);
           _ -> case valid_name(Name) of
                    true -> Name;
-                   false -> ["`", Name, "`"]
+                   false -> "`" ++ Name ++ "`"
                end
-      end).
+      end.
 
 
 -spec format_date(calendar:date()) -> string().
@@ -57,7 +56,7 @@ add_zero(Num) when Num > 9 -> integer_to_list(Num);
 add_zero(Num) -> [$0 | integer_to_list(Num)].
 
 
--spec valid_char(char()) -> boolean().
+-spec valid_char(integer()) -> boolean().
 valid_char(Char) ->
     IsDigit = is_digit(Char),
     IsAlpha = is_alpha(Char),
@@ -68,12 +67,12 @@ valid_char(Char) ->
     end.
 
 
--spec is_digit(char()) -> boolean().
+-spec is_digit(integer()) -> boolean().
 is_digit(Char) when Char >= 48 andalso Char =< 57 -> true; % 0-9
 is_digit(_) -> false.
 
 
--spec is_alpha(char()) -> boolean().
+-spec is_alpha(integer()) -> boolean().
 is_alpha($_) -> true;
 is_alpha(Char) when Char >= 65 andalso Char =< 90 -> true; % A-Z
 is_alpha(Char) when Char >= 97 andalso Char =< 122 -> true; % a-z

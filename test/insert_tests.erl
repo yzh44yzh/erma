@@ -5,25 +5,25 @@
 
 
 insert1_test() ->
-    Q1 = <<"INSERT INTO users (first, last) VALUES ('Chris', 'Granger')">>,
+    Q1 = <<"INSERT INTO users (`first`, `last`) VALUES ('Chris', 'Granger')">>,
     S1 = {insert, {table, "users"},
           [{"first", "Chris"},
            {"last", "Granger"}]},
     ?assertEqual(Q1, erma:build(S1)),
 
-    Q2 = <<"INSERT INTO users (first, last, age) VALUES ('Bob', 'Dou', 25)">>,
+    Q2 = <<"INSERT INTO users (`first`, `last`, age) VALUES ('Bob', 'Dou', 25)">>,
     S2 = {insert, {table, "users"},
           [{"first", "Bob"},
            {"last", "Dou"},
            {"age", 25}]},
     ?assertEqual(Q2, erma:build(S2)),
 
-    Q3 = <<"INSERT INTO users (first, last) VALUES (?, ?)">>,
+    Q3 = <<"INSERT INTO users (`first`, `last`) VALUES (?, ?)">>,
     S3 = {insert, {table, "users"},
           ["first", "last"]},
     ?assertEqual(Q3, erma:build(S3)),
 
-    Q4 = <<"INSERT INTO users (first, last, age) VALUES (?, ?, ?)">>,
+    Q4 = <<"INSERT INTO users (`first`, `last`, age) VALUES (?, ?, ?)">>,
     S4 = {insert, {table, "users"},
           ["first", "last", "age"]},
     ?assertEqual(Q4, erma:build(S4)),
@@ -31,14 +31,14 @@ insert1_test() ->
 
 
 insert2_test() ->
-    Q1 = <<"INSERT INTO users (first, last) ",
+    Q1 = <<"INSERT INTO users (`first`, `last`) ",
            "VALUES ('Chris', 'Granger'), ('Bob', 'Dou'), ('Helen', 'Rice')">>,
     S1 = {insert, {table, "users"},
           ["first", "last"],
           [["Chris", "Granger"], ["Bob", "Dou"], ["Helen", "Rice"]]},
     ?assertEqual(Q1, erma:build(S1)),
 
-    Q2 = <<"INSERT INTO users (first, last, age) ",
+    Q2 = <<"INSERT INTO users (`first`, `last`, age) ",
            "VALUES ('Bill', 'Foo', 24), ('Bob', 'Dou', 25), ('Helen', 'Rice', 21)">>,
     S2 = {insert, {table, "users"},
           ["first", "last", "age"],

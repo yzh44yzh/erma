@@ -61,7 +61,7 @@ where4_test() ->
 
 where5_test() ->
     ?assertEqual(<<"SELECT * FROM post ",
-                   "WHERE state IN ('active', 'suspended', 'unknown')">>,
+                   "WHERE `state` IN ('active', 'suspended', 'unknown')">>,
                  erma:build(
                    {select, {table, "post"},
                     [{where, [{"state", in, ["active", "suspended", "unknown"]}
@@ -79,7 +79,7 @@ where6_test() ->
                    "AND (blocked = false AND "
                    "(posted > '2014-01-01 22:30:00' OR posted < '2013-12-20 12:15:00')) ",
                    "AND (NOT (user_id = 20 OR user_id = 30)) ",
-                   "AND state IN ('active', 'suspended', 'unknown')">>,
+                   "AND `state` IN ('active', 'suspended', 'unknown')">>,
                  erma:build(
                    {select, {table, "post"},
                     [{where, [{'or', [{"title", like, "%funny%"},
@@ -98,14 +98,14 @@ where6_test() ->
 
 
 where7_test() ->
-    ?assertEqual(<<"SELECT users.* FROM users WHERE (users.name = ? OR users.name = ?)">>,
+    ?assertEqual(<<"SELECT users.* FROM users WHERE (users.`name` = ? OR users.`name` = ?)">>,
                  erma:build({select, {table, "users"},
                              [{fields, ["users.*"]},
                               {where, [{'or', [{"users.name", "?"},
                                                {"users.name", "?"}]}]}
                               ]})),
 
-    ?assertEqual(<<"SELECT * FROM users WHERE ((last = ? AND name = ?) OR email = ? OR age > ?)">>,
+    ?assertEqual(<<"SELECT * FROM users WHERE ((`last` = ? AND `name` = ?) OR email = ? OR age > ?)">>,
                  erma:build({select, {table, "users"},
                               [{where, [{'or', [{'and', [{"last", "?"}, {"name", "?"}]},
                                                 {"email", "?"},
@@ -119,7 +119,7 @@ where7_test() ->
                                                         {"z", gt, 4}]}]}]}
                                ]})),
 
-    ?assertEqual(<<"SELECT * FROM users WHERE (name LIKE ? OR name LIKE ?)">>,
+    ?assertEqual(<<"SELECT * FROM users WHERE (`name` LIKE ? OR `name` LIKE ?)">>,
                  erma:build({select, {table, "users"},
                               [{where, [{'or', [{"name", like, "?"},
                                                 {"name", like, "?"}]}]}
