@@ -23,9 +23,9 @@ erma:build(Select)
 ```
 gives
 ```erlang
-<<"SELECT first_name, last_name, address.state ",
-  "FROM user ",
-  "LEFT JOIN address ON address.id = user.address_id">>
+<<"SELECT first_name, last_name, address.`state` ",
+  "FROM `user` ",
+  "LEFT JOIN address ON address.id = `user`.address_id">>
 ```
 
 ### Append more details to select
@@ -42,7 +42,7 @@ erma:build(Select1)
 gives
 ```erlang
 <<"SELECT id, username ",
-  "FROM user ",
+  "FROM `user` ",
   "WHERE email LIKE '*@gmail.com' ",
   "AND active = true ",
   "AND age > 18 ",
@@ -69,12 +69,12 @@ erma:build(Select))
 ```
 gives
 ```erlang
-<<"SELECT email.email, address1.state, address2.state, account.name ",
-  "FROM user ",
-  "LEFT JOIN email ON email.id = user.email_id ",
-  "RIGHT JOIN address AS a1 ON a1.id = user.address_id ",
-  "INNER JOIN address AS a2 ON a2.id = user.address_id ",
-  "FULL JOIN account ON account.id = user.account_id">>
+<<"SELECT email.email, address1.`state`, address2.`state`, account.`name` ",
+  "FROM `user` ",
+  "LEFT JOIN email ON email.id = `user`.email_id ",
+  "RIGHT JOIN address AS a1 ON a1.id = `user`.address_id ",
+  "INNER JOIN address AS a2 ON a2.id = `user`.address_id ",
+  "FULL JOIN account ON account.id = `user`.account_id">>
 ```
 
 ### Insert
@@ -97,7 +97,7 @@ erma:build({insert, {table, "users"},
 ```
 gives
 ```erlang
-<<"INSERT INTO users (first, last) ",
+<<"INSERT INTO users (`first`, `last`) ",
            "VALUES ('Chris', 'Granger'), ('Bob', 'Dou'), ('Helen', 'Rice')">>
 ```
 
@@ -111,7 +111,7 @@ erma:build({update, {table, "users"},
 ```
 gives
 ```erlang
-<<"UPDATE users SET first = 'Chris', last = 'Granger' WHERE id = 3">>,
+<<"UPDATE users SET `first` = 'Chris', `last` = 'Granger' WHERE id = 3">>,
 ```
 
 ### Delete
