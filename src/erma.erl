@@ -88,11 +88,15 @@ get_table_name({table, Name, as, _}) -> list_to_binary(erma_utils:escape_name(Na
 
 -spec build_fields([entity()]) -> binary().
 build_fields(Entities) ->
+    F = fun(List) ->
+                List2 = lists:map(fun erma_utils:escape_name/1, List),
+                string:join(List2, ", ")
+        end,
     list_to_binary(
-      case proplists:get_value(fields, Entities) of
-          undefined -> "*";
-          List -> List2 = lists:map(fun erma_utils:escape_name/1, List),
-                  string:join(List2, ", ")
+      case lists:keyfind(fields, 1, Entities) of
+          false -> "*";
+          {fields, distinct, List} -> "DISTINCT " ++ F(List);
+          {fields, List} -> F(List)
       end).
 
 

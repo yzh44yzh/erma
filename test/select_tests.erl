@@ -46,3 +46,17 @@ select2_test() ->
                               {limit, 5},
                               {offset, 3}]})),
     ok.
+
+
+select3_test() ->
+    Q1 = <<"SELECT DISTINCT id FROM users">>,
+    S1 = {select, {table, "users"},
+          [{fields, distinct, ["id"]}]},
+    ?assertEqual(Q1, erma:build(S1)),
+
+    Q2 = <<"SELECT DISTINCT id, `name`, age FROM `user`">>,
+    S2 = {select, {table, "user"},
+          [{fields, distinct, ["id", "name", "age"]}]},
+    ?assertEqual(Q2, erma:build(S2)),
+
+    ok.

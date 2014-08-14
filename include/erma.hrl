@@ -25,7 +25,7 @@
                   offset_entity() |
                   limit_entity().
 
--type fields_entity() :: {fields, [name()]}.
+-type fields_entity() :: {fields, [name()]} | {fields, distinct, [name()]}.
 
 -type joins_entity() :: {joins, [join()]}.
 
