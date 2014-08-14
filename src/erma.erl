@@ -241,7 +241,12 @@ build_where_entity({Key, Value}) ->
 build_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
 build_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
 build_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
-build_value("?") -> "?";
+build_value("?") -> "?"; % mysql placeholder
+build_value([$$ | Rest] = Value) -> % postgresql placeholder
+    case string:to_integer(Rest) of
+        {_Num, []} -> Value;
+        _ ->  ["'", Value, "'"]
+    end;
 build_value(Value) when is_integer(Value) -> integer_to_list(Value);
 build_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
 build_value(Value) when is_list(Value) -> ["'", Value, "'"].
