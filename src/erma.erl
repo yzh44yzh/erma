@@ -104,7 +104,9 @@ build_fields(Entities) ->
 build_from({table, Name}) -> list_to_binary(" FROM " ++ erma_utils:escape_name(Name));
 build_from({table, Name, as, Alias}) ->
     list_to_binary(lists:flatten([" FROM ", erma_utils:escape_name(Name),
-                                  " AS ", erma_utils:escape_name(Alias)])).
+                                  " AS ", erma_utils:escape_name(Alias)]));
+build_from(Name) when is_list(Name) orelse is_binary(Name) ->
+    build_from({table, Name}).
 
 
 -spec build_joins(table(), [entity()]) -> binary().

@@ -203,3 +203,23 @@ binary_test() ->
                    "WHERE email = 'some@where.com'">>,
                  erma:build(Select3)),
     ok.
+
+
+short_table_syntax_test() ->
+    Select1 = {select, <<"user">>, []},
+    ?assertEqual(<<"SELECT * FROM `user`">>, erma:build(Select1)),
+
+    Select2 = {select, "user",
+              [{where, [{<<"email">>, <<"some@where.com">>}]}]},
+    ?assertEqual(<<"SELECT * FROM `user` WHERE email = 'some@where.com'">>,
+                 erma:build(Select2)),
+
+    Select3 = {select, <<"user">>,
+               [{fields, [<<"first_name">>, "last_name", "address.state"]},
+                {where, [{"email", <<"some@where.com">>}]}
+              ]},
+    ?assertEqual(<<"SELECT first_name, last_name, address.`state` ",
+                   "FROM `user` ",
+                   "WHERE email = 'some@where.com'">>,
+                 erma:build(Select3)),
+    ok.
