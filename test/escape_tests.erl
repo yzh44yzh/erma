@@ -128,8 +128,10 @@ escape7_test() ->
     I1 = {insert, {table, "my-post"}, [{"title", "hello"}, {"status", "active"}]},
     ?assertEqual(Q1, erma:build(I1)),
 
-    Q2 = <<"INSERT INTO `my-post` (`@name`, `status`) VALUES ('Bob', 'active'), ('Bill', 'blocked')">>,
-    I2 = {insert, {table, "my-post"}, ["@name", "status"], [["Bob", "active"], ["Bill", "blocked"]]},
+    Q2 = <<"INSERT INTO `my-post` (`@name`, `status`) ",
+           "VALUES ('Bob', 'active'), ('Bill', 'blocked')">>,
+    I2 = {insert, {table, "my-post"},
+          {rows, ["@name", "status"], [["Bob", "active"], ["Bill", "blocked"]]}},
     ?assertEqual(Q2, erma:build(I2)),
 
     ok.

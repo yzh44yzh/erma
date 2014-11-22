@@ -5,26 +5,39 @@
                  {time, calendar:time()} |
                  {datetime, calendar:datetime()}.
 
+-type name_val() :: {name(), value()}.
+
 -type sql() :: binary().
 
--type equery() :: {select, table(), [entity()]} |
-                  {insert, table(), [name()]} |
-                  {insert, table(), [{name(), value()}]} |
-                  {insert, table(), [name()], [[value()]]} |
-                  {update, table(), [name()]} |
-                  {update, table(), [{name(), value()}]} |
-                  {update, table(), [name()], where_entity()} |
-                  {update, table(), [{name(), value()}], where_entity()} |
-                  {delete, table(), where_entity()}.
+-type equery() :: {select, table(), [sel_entity()]} |
+                  {insert, table(), ins_name_val()} |
+                  {insert, table(), ins_name_val(), ins_entity()} |
+                  {update, table(), upd_name_val()} |
+                  {update, table(), upd_name_val(), upd_entity()} |
+                  {update, table(), upd_name_val(), [upd_entity()]} |
+                  {delete, table(), del_entity()} |
+                  {delete, table(), [del_entity()]}.
 
 -type table() :: name() | {table, name()} | {table, name(), as, name()}.
 
--type entity() :: fields_entity() |
-                  joins_entity() |
-                  where_entity() |
-                  order_entity() |
-                  offset_entity() |
-                  limit_entity().
+-type entity() :: sel_entity() | ins_entity() | upd_entity() | del_entity().
+
+-type sel_entity() :: fields_entity() |
+                      joins_entity() |
+                      where_entity() |
+                      order_entity() |
+                      offset_entity() |
+                      limit_entity().
+
+-type ins_name_val() :: [name()] | [name_val()] | {rows, [name()], [[value()]]}.
+
+-type ins_entity() :: returning_entity().
+
+-type upd_name_val() :: [name()] | [name_val()].
+
+-type upd_entity() :: where_entity() | returning_entity().
+
+-type del_entity() :: where_entity() | returning_entity().
 
 -type fields_entity() :: {fields, [name()]} | {fields, distinct, [name()]}.
 
@@ -54,6 +67,7 @@
 
 -type limit_entity() :: {limit, integer()}.
 
+-type returning_entity() :: {returning, id | [name()]}.
 
 
 -define(SQL_RESERVED_WORDS,

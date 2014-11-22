@@ -22,19 +22,7 @@ build({select, Table, Entities}) ->
       Order/binary,
       OffsetLimit/binary>>;
 
-build({insert, Table, KV}) ->
-    TableName = get_table_name(Table),
-    {Keys, Values} = lists:unzip(lists:map(
-                                   fun({K, V}) -> {erma_utils:escape_name(K),
-                                                   lists:flatten(build_value(V))};
-                                      (K) -> {erma_utils:escape_name(K), "?"}
-                                   end, KV)),
-    Keys2 = list_to_binary(string:join(Keys, ", ")),
-    Values2 = list_to_binary(string:join(Values, ", ")),
-    <<"INSERT INTO ", TableName/binary,
-      " (", Keys2/binary, ") VALUES (", Values2/binary, ")">>;
-
-build({insert, Table, Keys, Values}) ->
+build({insert, Table, {rows, Keys, Values}}) ->
     TableName = get_table_name(Table),
     Keys2 = case Keys of
                 [] -> <<>>;
@@ -52,6 +40,19 @@ build({insert, Table, Keys, Values}) ->
 
     <<"INSERT INTO ", TableName/binary,
       Keys2/binary, " VALUES ", Values3/binary>>;
+
+build({insert, Table, KV}) ->
+    TableName = get_table_name(Table),
+    {Keys, Values} = lists:unzip(lists:map(
+                                   fun({K, V}) -> {erma_utils:escape_name(K),
+                                                   lists:flatten(build_value(V))};
+                                      (K) -> {erma_utils:escape_name(K), "?"}
+                                   end, KV)),
+    Keys2 = list_to_binary(string:join(Keys, ", ")),
+    Values2 = list_to_binary(string:join(Values, ", ")),
+    <<"INSERT INTO ", TableName/binary,
+      " (", Keys2/binary, ") VALUES (", Values2/binary, ")">>;
+
 
 build({update, Table, KV}) -> build({update, Table, KV, {where, []}});
 build({update, Table, KV, Where}) ->
