@@ -53,9 +53,16 @@ build({insert, Table, KV}) ->
     <<"INSERT INTO ", TableName/binary,
       " (", Keys2/binary, ") VALUES (", Values2/binary, ")">>;
 
+build({insert, Table, Rows, Returning}) ->
+    Sql = build({insert, Table, Rows}),
+    Ret = build_returning([Returning]),
+    <<Sql/binary, Ret/binary>>;
 
-build({update, Table, KV}) -> build({update, Table, KV, {where, []}});
-build({update, Table, KV, Where}) ->
+
+build({update, Table, KV}) ->
+    build({update, Table, KV, []});
+
+build({update, Table, KV, Entities}) when is_list(Entities) ->
     TableName = get_table_name(Table),
     Values = lists:map(fun({K, V}) ->
                                lists:flatten([list_to_binary(erma_utils:escape_name(K)),
@@ -65,13 +72,24 @@ build({update, Table, KV, Where}) ->
                                               " = ?"])
                        end, KV),
     Values2 = list_to_binary(string:join(Values, ", ")),
-    Where2 = build_where([Where]),
-    <<"UPDATE ", TableName/binary, " SET ", Values2/binary, Where2/binary>>;
 
-build({delete, Table, Where}) ->
+    Where = build_where(Entities),
+    Returning = build_returning(Entities),
+
+    <<"UPDATE ", TableName/binary, " SET ", Values2/binary,
+      Where/binary, Returning/binary>>;
+
+build({update, Table, KV, Entity}) ->
+    build({update, Table, KV, [Entity]});
+
+build({delete, Table, Entities}) when is_list(Entities) ->
     TableName = get_table_name(Table),
-    Where2 = build_where([Where]),
-    <<"DELETE FROM ", TableName/binary, Where2/binary>>.
+    Where = build_where(Entities),
+    Returning = build_returning(Entities),
+    <<"DELETE FROM ", TableName/binary, Where/binary, Returning/binary>>;
+
+build({delete, Table, Entity}) ->
+    build({delete, Table, [Entity]}).
 
 
 -spec append(equery(), [entity()] | entity()) -> equery().
@@ -84,7 +102,9 @@ append(Query, NewEntity) -> append(Query, [NewEntity]).
 
 -spec get_table_name(table()) -> binary().
 get_table_name({table, Name}) -> list_to_binary(erma_utils:escape_name(Name));
-get_table_name({table, Name, as, _}) -> list_to_binary(erma_utils:escape_name(Name)).
+get_table_name({table, Name, as, _}) -> list_to_binary(erma_utils:escape_name(Name));
+get_table_name(Name) when is_list(Name) orelse is_binary(Name) ->
+    get_table_name({table, Name}).
 
 
 -spec build_fields([entity()]) -> binary().
@@ -297,6 +317,22 @@ build_offset_limit(Entities) ->
           {_, ""} -> [" ", Offset];
           _ -> [" ", Offset, ", ", Limit]
       end).
+
+
+-spec build_returning([entity()]) -> binary().
+build_returning(Entities) ->
+    case proplists:get_value(returning, Entities) of
+        undefined -> <<>>;
+        Val -> list_to_binary(build_returning_entity({returning, Val}))
+    end.
+
+
+-spec build_returning_entity(returning_entity()) -> iolist().
+build_returning_entity({returning, id}) ->
+    " RETURNING id";
+build_returning_entity({returning, Fields}) ->
+    Fields2 = lists:map(fun erma_utils:escape_name/1, Fields),
+    [" RETURNING ", string:join(Fields2, ", ")].
 
 
 -spec merge([entity()], [entity()]) -> [entity()].

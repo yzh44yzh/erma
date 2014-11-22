@@ -51,7 +51,8 @@
 -type join_prop() :: {pk, name()} | {fk, name()}.
 
 -type where_entity() :: {where, [where_value()]}.
--type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like | in | not_in | between.
+-type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' |
+                        like | in | not_in | between.
 -type where_value() :: {name(), value()} |
                        {name(), where_action(), value()} |
                        {name(), in, [value()]} |

@@ -16,3 +16,10 @@ delete2_test() ->
     D = {delete, {table, "users"}, {where, []}},
     ?assertEqual(Q, erma:build(D)),
     ok.
+
+
+delete3_test() ->
+    Q = <<"DELETE FROM users WHERE id = 3">>,
+    D = {delete, {table, "users"}, [{where, [{"id", 3}]}]},
+    ?assertEqual(Q, erma:build(D)),
+    ok.
