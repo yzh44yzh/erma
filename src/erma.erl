@@ -253,6 +253,7 @@ build_value([$$ | Rest] = Value) -> % postgresql placeholder
     end;
 build_value(Value) when is_integer(Value) -> integer_to_list(Value);
 build_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
+build_value(Value) when is_binary(Value) -> build_value(unicode:characters_to_list(Value));
 build_value(Value) when is_list(Value) -> ["'", Value, "'"].
 
 

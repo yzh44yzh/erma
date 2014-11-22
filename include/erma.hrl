@@ -1,5 +1,6 @@
--type name() :: string().
--type value() :: boolean() | integer() | float() | string() |
+-type name() :: string() | binary().
+
+-type value() :: boolean() | integer() | float() | string() | binary() |
                  {date, calendar:date()} |
                  {time, calendar:time()} |
                  {datetime, calendar:datetime()}.
@@ -16,7 +17,7 @@
                   {update, table(), [{name(), value()}], where_entity()} |
                   {delete, table(), where_entity()}.
 
--type table() :: {table, name()} | {table, name(), as, name()}.
+-type table() :: name() | {table, name()} | {table, name(), as, name()}.
 
 -type entity() :: fields_entity() |
                   joins_entity() |

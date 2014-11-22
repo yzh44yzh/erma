@@ -182,3 +182,24 @@ complex_test() ->
                    "WHERE last_login < '2014-01-20'">>,
                  erma:build(Select)),
     ok.
+
+
+binary_test() ->
+    TUser = {table, <<"user">>},
+    Select1 = {select, TUser, []},
+    ?assertEqual(<<"SELECT * FROM `user`">>, erma:build(Select1)),
+
+    Select2 = {select, TUser,
+              [{where, [{<<"email">>, <<"some@where.com">>}]}]},
+    ?assertEqual(<<"SELECT * FROM `user` WHERE email = 'some@where.com'">>,
+                 erma:build(Select2)),
+
+    Select3 = {select, TUser,
+               [{fields, [<<"first_name">>, "last_name", "address.state"]},
+                {where, [{"email", <<"some@where.com">>}]}
+              ]},
+    ?assertEqual(<<"SELECT first_name, last_name, address.`state` ",
+                   "FROM `user` ",
+                   "WHERE email = 'some@where.com'">>,
+                 erma:build(Select3)),
+    ok.

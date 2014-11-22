@@ -7,7 +7,9 @@
 
 %%% module API
 
--spec valid_name(string()) -> boolean().
+-spec valid_name(name()) -> boolean().
+valid_name(Name) when is_binary(Name) ->
+    valid_name(unicode:characters_to_list(Name));
 valid_name(Name) ->
     case lists:member(string:to_upper(Name), ?SQL_RESERVED_WORDS) of
         true -> false;
@@ -22,7 +24,9 @@ valid_name(Name) ->
     end.
 
 
--spec escape_name(string()) -> iolist().
+-spec escape_name(name()) -> iolist().
+escape_name(Name) when is_binary(Name) ->
+    escape_name(unicode:characters_to_list(Name));
 escape_name(Name) ->
     lists:flatten(
       case string:tokens(Name, ".") of

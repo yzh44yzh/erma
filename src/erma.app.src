@@ -1,8 +1,8 @@
 %% -*- mode: Erlang;-*-
 {application, erma,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "SQL builder library"},
+  {vsn, "0.3"},
   {registered, []},
   {applications, [kernel, stdlib]},
   {env, []}
