@@ -10,7 +10,8 @@
 -spec valid_name(name()) -> boolean().
 valid_name(Name) when is_binary(Name) ->
     valid_name(unicode:characters_to_list(Name));
-valid_name(Name) ->
+valid_name(Name0) ->
+    Name = lists:flatten(Name0),
     case lists:member(string:to_upper(Name), ?SQL_RESERVED_WORDS) of
         true -> false;
         false -> [FirstChar | Last] = Name,
@@ -27,7 +28,8 @@ valid_name(Name) ->
 -spec escape_name(name()) -> iolist().
 escape_name(Name) when is_binary(Name) ->
     escape_name(unicode:characters_to_list(Name));
-escape_name(Name) ->
+escape_name(Name0) ->
+    Name = lists:flatten(Name0),
     lists:flatten(
       case string:tokens(Name, ".") of
           [N1, "*"] -> [escape_name(N1), ".*"];

@@ -98,14 +98,14 @@ build_fields(Entities) ->
         end,
     case lists:keyfind(fields, 1, Entities) of
         false -> "*";
-        {fields, distinct, List} -> "DISTINCT " ++ F(List);
+        {fields, distinct, List} -> ["DISTINCT ", F(List)];
         {fields, List} -> F(List)
     end.
 
 
 -spec build_from(table()) -> iolist().
 build_from({table, Name}) ->
-    [" FROM " ++ erma_utils:escape_name(Name)];
+    [" FROM ", erma_utils:escape_name(Name)];
 build_from({table, Name, as, Alias}) ->
     [" FROM ", erma_utils:escape_name(Name), " AS ", erma_utils:escape_name(Alias)];
 build_from(Name) when is_list(Name) orelse is_binary(Name) ->
@@ -170,7 +170,7 @@ build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
                      Pk -> erma_utils:escape_name(Pk)
                  end,
     ForeignKey = case proplists:get_value(fk, JoinProps) of
-                     undefined -> erma_utils:escape_name(JoinName ++ "_id");
+                     undefined -> erma_utils:escape_name([JoinName, "_id"]);
                      Fk -> erma_utils:escape_name(Fk)
                  end,
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].

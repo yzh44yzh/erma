@@ -1,4 +1,4 @@
--type name() :: string() | binary().
+-type name() :: string() | binary() | iolist().
 
 -type value() :: boolean() | integer() | float() | string() | binary() |
                  {date, calendar:date()} |
