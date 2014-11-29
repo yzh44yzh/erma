@@ -14,49 +14,37 @@ build({select, Table, Entities}) ->
     Where = build_where(Entities),
     Order = build_order(Entities),
     OffsetLimit = build_offset_limit(Entities),
-    <<"SELECT ",
-      Fields/binary,
-      From/binary,
-      Joins/binary,
-      Where/binary,
-      Order/binary,
-      OffsetLimit/binary>>;
+    unicode:characters_to_binary(["SELECT ", Fields, From, Joins, Where, Order, OffsetLimit]);
 
 build({insert, Table, {rows, Keys, Values}}) ->
     TableName = get_table_name(Table),
     Keys2 = case Keys of
-                [] -> <<>>;
+                [] -> [];
                 _ -> K1 = lists:map(fun erma_utils:escape_name/1, Keys),
-                     K2 = unicode:characters_to_binary(string:join(K1, ", ")),
-                     <<" (", K2/binary, ")">>
+                     K2 = string:join(K1, ", "),
+                     [" (", K2, ")"]
             end,
     Values2 = lists:map(fun(V1) ->
-                                V2 = lists:map(fun(V) ->
-                                                       lists:flatten(build_value(V))
-                                               end, V1),
+                                V2 = lists:map(fun(V) -> build_value(V) end, V1),
                                 ["(", string:join(V2, ", "), ")"]
                         end, Values),
-    Values3 = unicode:characters_to_binary(string:join(Values2, ", ")),
-
-    <<"INSERT INTO ", TableName/binary,
-      Keys2/binary, " VALUES ", Values3/binary>>;
+    Values3 = string:join(Values2, ", "),
+    unicode:characters_to_binary(["INSERT INTO ", TableName, Keys2, " VALUES ", Values3]);
 
 build({insert, Table, KV}) ->
     TableName = get_table_name(Table),
     {Keys, Values} = lists:unzip(lists:map(
-                                   fun({K, V}) -> {erma_utils:escape_name(K),
-                                                   lists:flatten(build_value(V))};
+                                   fun({K, V}) -> {erma_utils:escape_name(K), build_value(V)};
                                       (K) -> {erma_utils:escape_name(K), "?"}
                                    end, KV)),
-    Keys2 = unicode:characters_to_binary(string:join(Keys, ", ")),
-    Values2 = unicode:characters_to_binary(string:join(Values, ", ")),
-    <<"INSERT INTO ", TableName/binary,
-      " (", Keys2/binary, ") VALUES (", Values2/binary, ")">>;
+    Keys2 = string:join(Keys, ", "),
+    Values2 = string:join(Values, ", "),
+    unicode:characters_to_binary(["INSERT INTO ", TableName, " (", Keys2, ") VALUES (", Values2, ")"]);
 
 build({insert, Table, Rows, Returning}) ->
     Sql = build({insert, Table, Rows}),
     Ret = build_returning([Returning]),
-    <<Sql/binary, Ret/binary>>;
+    unicode:characters_to_binary([Sql, Ret]);
 
 
 build({update, Table, KV}) ->
@@ -64,18 +52,13 @@ build({update, Table, KV}) ->
 
 build({update, Table, KV, Entities}) when is_list(Entities) ->
     TableName = get_table_name(Table),
-    Values = lists:map(fun({K, V}) ->
-                               [erma_utils:escape_name(K), " = ", build_value(V)];
-                          (K) ->
-                               [erma_utils:escape_name(K), " = ?"]
+    Values = lists:map(fun({K, V}) -> [erma_utils:escape_name(K), " = ", build_value(V)];
+                          (K) -> [erma_utils:escape_name(K), " = ?"]
                        end, KV),
-    Values2 = unicode:characters_to_binary(string:join(Values, ", ")),
-
+    Values2 = string:join(Values, ", "),
     Where = build_where(Entities),
     Returning = build_returning(Entities),
-
-    <<"UPDATE ", TableName/binary, " SET ", Values2/binary,
-      Where/binary, Returning/binary>>;
+    unicode:characters_to_binary(["UPDATE ", TableName, " SET ", Values2, Where, Returning]);
 
 build({update, Table, KV, Entity}) ->
     build({update, Table, KV, [Entity]});
@@ -84,7 +67,7 @@ build({delete, Table, Entities}) when is_list(Entities) ->
     TableName = get_table_name(Table),
     Where = build_where(Entities),
     Returning = build_returning(Entities),
-    <<"DELETE FROM ", TableName/binary, Where/binary, Returning/binary>>;
+    unicode:characters_to_binary(["DELETE FROM ", TableName, Where, Returning]);
 
 build({delete, Table, Entity}) ->
     build({delete, Table, [Entity]}).
@@ -98,49 +81,47 @@ append(Query, NewEntity) -> append(Query, [NewEntity]).
 
 %%% inner functions
 
--spec get_table_name(table()) -> binary().
+-spec get_table_name(table()) -> iolist().
 get_table_name({table, Name}) ->
-    unicode:characters_to_binary(erma_utils:escape_name(Name));
+    erma_utils:escape_name(Name);
 get_table_name({table, Name, as, _}) ->
     get_table_name({table, Name});
 get_table_name(Name) when is_list(Name) orelse is_binary(Name) ->
     get_table_name({table, Name}).
 
 
--spec build_fields([entity()]) -> binary().
+-spec build_fields([entity()]) -> iolist().
 build_fields(Entities) ->
     F = fun(List) ->
                 List2 = lists:map(fun erma_utils:escape_name/1, List),
                 string:join(List2, ", ")
         end,
-    unicode:characters_to_binary(
-      case lists:keyfind(fields, 1, Entities) of
-          false -> "*";
-          {fields, distinct, List} -> "DISTINCT " ++ F(List);
-          {fields, List} -> F(List)
-      end).
+    case lists:keyfind(fields, 1, Entities) of
+        false -> "*";
+        {fields, distinct, List} -> "DISTINCT " ++ F(List);
+        {fields, List} -> F(List)
+    end.
 
 
--spec build_from(table()) -> binary().
+-spec build_from(table()) -> iolist().
 build_from({table, Name}) ->
-    unicode:characters_to_binary(" FROM " ++ erma_utils:escape_name(Name));
+    [" FROM " ++ erma_utils:escape_name(Name)];
 build_from({table, Name, as, Alias}) ->
-    unicode:characters_to_binary([" FROM ", erma_utils:escape_name(Name),
-                                  " AS ", erma_utils:escape_name(Alias)]);
+    [" FROM ", erma_utils:escape_name(Name), " AS ", erma_utils:escape_name(Alias)];
 build_from(Name) when is_list(Name) orelse is_binary(Name) ->
     build_from({table, Name}).
 
 
--spec build_joins(table(), [entity()]) -> binary().
+-spec build_joins(table(), [entity()]) -> iolist().
 build_joins(MainTable, Entities) ->
     case proplists:get_value(joins, Entities) of
-        undefined -> <<>>;
-        [] -> <<>>;
+        undefined -> [];
+        [] -> [];
         JEntities -> J1 = lists:map(fun(Join) ->
                                             build_join_entity(MainTable, Join)
                                     end, JEntities),
-                     J2 = unicode:characters_to_binary(string:join(J1, " ")),
-                     <<" ", J2/binary>>
+                     J2 = string:join(J1, " "),
+                     [" ", J2]
     end.
 
 
@@ -195,18 +176,18 @@ build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
 
 
--spec build_where([entity()]) -> binary().
+-spec build_where([entity()]) -> iolist().
 build_where(Entities) ->
     case proplists:get_value(where, Entities) of
-        undefined -> <<>>;
-        [] -> <<>>;
+        undefined -> [];
+        [] -> [];
         WEntities -> W1 = lists:map(fun(Entity) ->
                                             build_where_entity(Entity)
                                     end, WEntities),
                      case lists:flatten(W1) of
-                         [] -> <<>>;
-                         _ -> W2 = unicode:characters_to_binary(string:join(W1, " AND ")),
-                              <<" WHERE ", W2/binary>>
+                         [] -> [];
+                         _ -> W2 = string:join(W1, " AND "),
+                              [" WHERE ", W2]
                      end
     end.
 
@@ -216,7 +197,7 @@ build_where_entity({'not', WEntity}) ->
 build_where_entity({'or', []}) -> [];
 build_where_entity({'or', WEntities}) ->
     W = lists:map(fun build_where_entity/1, WEntities),
-    case lists:flatten(W) of
+    case W of
         [] -> [];
         _ -> ["(", string:join(W, " OR "), ")"]
     end;
@@ -281,16 +262,14 @@ build_value(Value) when is_binary(Value) -> build_value(unicode:characters_to_li
 build_value(Value) when is_list(Value) -> ["'", Value, "'"].
 
 
--spec build_order([entity()]) -> binary().
+-spec build_order([entity()]) -> iolist().
 build_order(Entities) ->
     case proplists:get_value(order, Entities) of
-        undefined -> <<>>;
-        [] -> <<>>;
-        OEntities -> O1 = lists:map(fun(Entity) ->
-                                            lists:flatten(build_order_entity(Entity))
-                                    end, OEntities),
-                     O2 = unicode:characters_to_binary(string:join(O1, ", ")),
-                     <<" ORDER BY ", O2/binary>>
+        undefined -> [];
+        [] -> [];
+        OEntities -> O1 = lists:map(fun(Entity) -> build_order_entity(Entity) end, OEntities),
+                     O2 = string:join(O1, ", "),
+                     [" ORDER BY ", O2]
     end.
 
 
@@ -300,7 +279,7 @@ build_order_entity({Field, desc}) -> [erma_utils:escape_name(Field), " DESC"];
 build_order_entity(Field) -> [erma_utils:escape_name(Field), " ASC"].
 
 
--spec build_offset_limit([entity()]) -> binary().
+-spec build_offset_limit([entity()]) -> iolist().
 build_offset_limit(Entities) ->
     F = fun(Key, Str) ->
                 case proplists:get_value(Key, Entities) of
@@ -311,20 +290,19 @@ build_offset_limit(Entities) ->
         end,
     Offset = F(offset, "OFFSET"),
     Limit = F(limit, "LIMIT"),
-    unicode:characters_to_binary(
-      case {Offset, Limit} of
-          {"", ""} -> "";
-          {"", _} -> [" ", Limit];
-          {_, ""} -> [" ", Offset];
-          _ -> [" ", Offset, ", ", Limit]
-      end).
+    case {Offset, Limit} of
+        {"", ""} -> "";
+        {"", _} -> [" ", Limit];
+        {_, ""} -> [" ", Offset];
+        _ -> [" ", Offset, ", ", Limit]
+    end.
 
 
--spec build_returning([entity()]) -> binary().
+-spec build_returning([entity()]) -> iolist().
 build_returning(Entities) ->
     case proplists:get_value(returning, Entities) of
-        undefined -> <<>>;
-        Val -> unicode:characters_to_binary(build_returning_entity({returning, Val}))
+        undefined -> [];
+        Val -> build_returning_entity({returning, Val})
     end.
 
 
