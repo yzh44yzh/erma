@@ -129,8 +129,6 @@ See [unit tests](test/) for more samples.
 
 ## Not implemented yet
 
- - escape tables and fields name
- - distinct
  - aggregate functions
  - group by, having
  - subselect
