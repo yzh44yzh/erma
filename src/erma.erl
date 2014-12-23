@@ -92,14 +92,19 @@ get_table_name(Name) when is_list(Name) orelse is_binary(Name) ->
 
 -spec build_fields([entity()]) -> iolist().
 build_fields(Entities) ->
-    F = fun(List) ->
-                List2 = lists:map(fun erma_utils:escape_name/1, List),
-                string:join(List2, ", ")
+    F = fun(Fields) ->
+                Fields2 = lists:map(fun({AggFun, Name}) ->
+                                          [string:to_upper(atom_to_list(AggFun)),
+                                           "(", erma_utils:escape_name(Name), ")"];
+                                     (Name) ->
+                                          erma_utils:escape_name(Name)
+                                  end, Fields),
+                string:join(Fields2, ", ")
         end,
     case lists:keyfind(fields, 1, Entities) of
         false -> "*";
-        {fields, distinct, List} -> ["DISTINCT ", F(List)];
-        {fields, List} -> F(List)
+        {fields, distinct, Fields} -> ["DISTINCT ", F(Fields)];
+        {fields, Fields} -> F(Fields)
     end.
 
 

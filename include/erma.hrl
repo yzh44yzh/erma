@@ -39,7 +39,11 @@
 
 -type del_entity() :: where_entity() | returning_entity().
 
--type fields_entity() :: {fields, [name()]} | {fields, distinct, [name()]}.
+-type agg_fun() :: atom().
+
+-type agg_value() :: {agg_fun(), name()}.
+
+-type fields_entity() :: {fields, [name() | agg_value()]} | {fields, distinct, [name() | agg_value()]}.
 
 -type joins_entity() :: {joins, [join()]}.
 
