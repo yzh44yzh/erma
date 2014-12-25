@@ -20,18 +20,18 @@
 -type join_type() :: inner_join | left_join | right_join | full_join.
 -type join_prop() :: {pk, name()} | {fk, name()}.
 
--type where() :: {where, [where_value()]}.
+-type where() :: {where, [where_condition()]}.
 
 -type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like.
 
--type where_value() :: {name(), value()} |
-                       {name(), where_action(), value()} |
-                       {name(), in, [value()]} |
-                       {name(), not_in, [value()]} |
-                       {name(), between, value(), value()} |
-                       {'not', where_value()} |
-                       {'and', [where_value()]} |
-                       {'or', [where_value()]}.
+-type where_condition() :: {name(), value()} |
+                           {name(), where_action(), value()} |
+                           {name(), in, [value()]} |
+                           {name(), not_in, [value()]} |
+                           {name(), between, value(), value()} |
+                           {'not', where_condition()} |
+                           {'and', [where_condition()]} |
+                           {'or', [where_condition()]}.
 
 -type order() :: {order, [name() | {name(), asc} | {name(), desc}]}.
 

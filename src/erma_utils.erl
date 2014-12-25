@@ -1,6 +1,6 @@
 -module(erma_utils).
 
--export([valid_name/1, escape_name/1,
+-export([valid_name/1, prepare_table_name/1, prepare_name/1, prepare_value/1,
          format_date/1, format_time/1, format_datetime/1]).
 -include("erma.hrl").
 
@@ -25,20 +25,44 @@ valid_name(Name0) ->
     end.
 
 
--spec escape_name(name()) -> iolist().
-escape_name(Name) when is_binary(Name) ->
-    escape_name(unicode:characters_to_list(Name));
-escape_name(Name0) ->
+-spec prepare_table_name(table_name()) -> iolist().
+prepare_table_name({Name, as, Alias}) ->
+    [prepare_name(Name), " AS ", prepare_name(Alias)];
+prepare_table_name(Name) -> prepare_name(Name).
+
+
+-spec prepare_name(name()) -> iolist().
+prepare_name(Name) when is_atom(Name) ->
+    prepare_name(atom_to_list(Name));
+prepare_name(Name) when is_binary(Name) ->
+    prepare_name(unicode:characters_to_list(Name));
+prepare_name(Name0) ->
     Name = lists:flatten(Name0),
     lists:flatten(
       case string:tokens(Name, ".") of
-          [N1, "*"] -> [escape_name(N1), ".*"];
-          [N1, N2] -> [escape_name(N1), ".", escape_name(N2)];
+          [N1, "*"] -> [prepare_name(N1), ".*"];
+          [N1, N2] -> [prepare_name(N1), ".", prepare_name(N2)];
           _ -> case valid_name(Name) of
                    true -> Name;
                    false -> ["`", Name, "`"]
                end
       end).
+
+
+-spec prepare_value(value()) -> iolist().
+prepare_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
+prepare_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
+prepare_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
+prepare_value("?") -> "?"; % mysql placeholder
+prepare_value([$$ | Rest] = Value) -> % postgresql placeholder
+    case string:to_integer(Rest) of
+        {_Num, []} -> Value;
+        _ ->  ["'", Value, "'"]
+    end;
+prepare_value(Value) when is_integer(Value) -> integer_to_list(Value);
+prepare_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
+prepare_value(Value) when is_binary(Value) -> prepare_value(unicode:characters_to_list(Value));
+prepare_value(Value) when is_list(Value) -> ["'", Value, "'"].
 
 
 -spec format_date(calendar:date()) -> string().
