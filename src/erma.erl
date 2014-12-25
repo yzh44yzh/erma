@@ -6,74 +6,77 @@
 
 %%% module API
 
--spec build(equery()) -> sql().
-build({select, Table, Entities}) ->
-    Fields = build_fields(Entities),
-    From = build_from(Table),
+-spec build(sql_query()) -> sql().
+build({select, Fields, Table}) -> build_select("SELECT ", Fields, Table, []);
+build({select, Fields, Table, Entities}) -> build_select("SELECT ", Fields, Table, Entities);
+build({select_distinct, Fields, Table}) -> build_select("SELECT DISTINCT ", Fields, Table, []);
+build({select_distinct, Fields, Table, Entities}) -> build_select("SELECT DISTINCT ", Fields, Table, Entities);
+build({insert, Table, Names, Values}) -> build_insert(Table, Names, [Values], []);
+build({insert, Table, Names, Values, Returning}) -> build_insert(Table, Names, [Values], [Returning]);
+build({insert_rows, Table, Names, Rows}) -> build_insert(Table, Names, Rows, []);
+build({insert_rows, Table, Names, Rows, Returning}) -> build_insert(Table, Names, Rows, [Returning]);
+build({update, Table, KV}) -> build_update(Table, KV, []);
+build({update, Table, KV, Entities}) -> build_update(Table, KV, Entities);
+build({delete, Table}) -> build_delete(Table, []);
+build({delete, Table, Entities}) -> build_delete(Table, Entities).
+
+
+-spec build_select(select(), [field()], table_name(), [join() | where() | order() | limit()]) -> sql().
+build_select(Select, Fields, Table, Entities) ->
+    Fields = build_fields(Fields),
+    From = case Table of
+               {Name, as, Alias} ->
+                   [" FROM ", erma_utils:escape_name(Name),
+                    " AS ", erma_utils:escape_name(Alias)];
+               Name ->
+                   [" FROM ", erma_utils:escape_name(Name)]
+           end,
     Joins = build_joins(Table, Entities),
     Where = build_where(Entities),
     Order = build_order(Entities),
-    OffsetLimit = build_offset_limit(Entities),
-    unicode:characters_to_binary(["SELECT ", Fields, From, Joins, Where, Order, OffsetLimit]);
+    Limit = build_limit(Entities),
+    unicode:characters_to_binary([Select, Fields, From, Joins, Where, Order, Limit]).
 
-build({insert, Table, {rows, Keys, Values}}) ->
-    TableName = get_table_name(Table),
-    Keys2 = case Keys of
+
+-spec build_insert(name(), [name()], [[value()]], [returning()]) -> sql().
+build_insert(Table, Names, Rows, Entities) ->
+    TableName = erma_utils:escape_name(Table),
+    Names2 = case Names of
                 [] -> [];
-                _ -> K1 = lists:map(fun erma_utils:escape_name/1, Keys),
-                     K2 = string:join(K1, ", "),
-                     [" (", K2, ")"]
+                _ -> N1 = lists:map(fun erma_utils:escape_name/1, Names),
+                     N2 = string:join(N1, ", "),
+                     [" (", N2, ")"]
             end,
-    Values2 = lists:map(fun(V1) ->
+    Rows2 = lists:map(fun(V1) ->
                                 V2 = lists:map(fun(V) -> build_value(V) end, V1),
                                 ["(", string:join(V2, ", "), ")"]
-                        end, Values),
-    Values3 = string:join(Values2, ", "),
-    unicode:characters_to_binary(["INSERT INTO ", TableName, Keys2, " VALUES ", Values3]);
-
-build({insert, Table, KV}) ->
-    TableName = get_table_name(Table),
-    {Keys, Values} = lists:unzip(lists:map(
-                                   fun({K, V}) -> {erma_utils:escape_name(K), build_value(V)};
-                                      (K) -> {erma_utils:escape_name(K), "?"}
-                                   end, KV)),
-    Keys2 = string:join(Keys, ", "),
-    Values2 = string:join(Values, ", "),
-    unicode:characters_to_binary(["INSERT INTO ", TableName, " (", Keys2, ") VALUES (", Values2, ")"]);
-
-build({insert, Table, Rows, Returning}) ->
-    Sql = build({insert, Table, Rows}),
-    Ret = build_returning([Returning]),
-    unicode:characters_to_binary([Sql, Ret]);
+                        end, Rows),
+    Rows3 = string:join(Rows2, ", "),
+    Returning = build_returning(Entities),
+    unicode:characters_to_binary(["INSERT INTO ", TableName, Names2, " VALUES ", Rows3, Returning]).
 
 
-build({update, Table, KV}) ->
-    build({update, Table, KV, []});
-
-build({update, Table, KV, Entities}) when is_list(Entities) ->
-    TableName = get_table_name(Table),
+-spec build_update(name(), [{name(), value()}], [where() | returning()]) -> sql().
+build_update(Table, KV, Entities) ->
+    TableName = erma_utils:escape_name(Table),
     Values = lists:map(fun({K, V}) -> [erma_utils:escape_name(K), " = ", build_value(V)];
                           (K) -> [erma_utils:escape_name(K), " = ?"]
                        end, KV),
     Values2 = string:join(Values, ", "),
     Where = build_where(Entities),
     Returning = build_returning(Entities),
-    unicode:characters_to_binary(["UPDATE ", TableName, " SET ", Values2, Where, Returning]);
+    unicode:characters_to_binary(["UPDATE ", TableName, " SET ", Values2, Where, Returning]).
 
-build({update, Table, KV, Entity}) ->
-    build({update, Table, KV, [Entity]});
 
-build({delete, Table, Entities}) when is_list(Entities) ->
-    TableName = get_table_name(Table),
+-spec build_delete(name(), [where() | returning()]) -> sql().
+build_delete(Table, Entities) ->
+    TableName = erma_utils:escape_name(Table),
     Where = build_where(Entities),
     Returning = build_returning(Entities),
-    unicode:characters_to_binary(["DELETE FROM ", TableName, Where, Returning]);
-
-build({delete, Table, Entity}) ->
-    build({delete, Table, [Entity]}).
+    unicode:characters_to_binary(["DELETE FROM ", TableName, Where, Returning]).
 
 
--spec append(equery(), [entity()] | entity()) -> equery().
+%% TODO implement and spec
 append({Query, Table, Entities}, NewEntities) when is_list(NewEntities) ->
     {Query, Table, merge(Entities, NewEntities)};
 append(Query, NewEntity) -> append(Query, [NewEntity]).
@@ -81,16 +84,7 @@ append(Query, NewEntity) -> append(Query, [NewEntity]).
 
 %%% inner functions
 
--spec get_table_name(table()) -> iolist().
-get_table_name({table, Name}) ->
-    erma_utils:escape_name(Name);
-get_table_name({table, Name, as, _}) ->
-    get_table_name({table, Name});
-get_table_name(Name) when is_list(Name) orelse is_binary(Name) ->
-    get_table_name({table, Name}).
-
-
--spec build_fields([entity()]) -> iolist().
+-spec build_fields(list()) -> iolist().
 build_fields(Entities) ->
     F = fun(Fields) ->
                 Fields2 = lists:map(fun({AggFun, Name}) ->
@@ -108,67 +102,33 @@ build_fields(Entities) ->
     end.
 
 
--spec build_from(table()) -> iolist().
-build_from({table, Name}) ->
-    [" FROM ", erma_utils:escape_name(Name)];
-build_from({table, Name, as, Alias}) ->
-    [" FROM ", erma_utils:escape_name(Name), " AS ", erma_utils:escape_name(Alias)];
-build_from(Name) when is_list(Name) orelse is_binary(Name) ->
-    build_from({table, Name}).
-
-
--spec build_joins(table(), [entity()]) -> iolist().
+-spec build_joins(table_name(), list()) -> iolist().
 build_joins(MainTable, Entities) ->
-    case proplists:get_value(joins, Entities) of
-        undefined -> [];
-        [] -> [];
-        JEntities -> J1 = lists:map(fun(Join) ->
-                                            build_join_entity(MainTable, Join)
-                                    end, JEntities),
-                     J2 = string:join(J1, " "),
-                     [" ", J2]
-    end.
+    Joins = lists:filtermap(
+              fun({inner_join, Table, Props}) -> {true, build_join_entity("INNER JOIN ", Table, MainTable, Props)};
+                 ({left_join, Table, Props}) -> {true, build_join_entity("LEFT JOIN ", Table, MainTable, Props)};
+                 ({right_join, Table, Props}) -> {true, build_join_entity("RIGHT JOIN ", Table, MainTable, Props)};
+                 ({full_join, Table, Props}) -> {true, build_join_entity("FULL JOIN ", Table, MainTable, Props)};
+                 (_) -> false
+              end, Entities),
+    [" ", string:join(Joins, " ")].
 
 
--spec build_join_entity(table(), join()) -> iolist().
-build_join_entity(MainTable, {JoinType, JoinTable}) ->
-    build_join_entity(JoinType, JoinTable, MainTable, []);
-
-build_join_entity(MainTable, {JoinType, JoinTable, JoinProps}) when is_list(JoinProps) ->
-    build_join_entity(JoinType, JoinTable, MainTable, JoinProps);
-
-build_join_entity(_MainTable, {JoinType, JoinTable, ToTable}) when is_tuple(ToTable) ->
-    build_join_entity(JoinType, JoinTable, ToTable, []);
-
-build_join_entity(_MainTable, {JoinType, JoinTable, ToTable, JoinProps}) ->
-    build_join_entity(JoinType, JoinTable, ToTable, JoinProps).
-
-
--spec build_join_entity(join_type(), table(), table(), [join_prop()]) -> iolist().
-build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
-    Join = case JoinType of
-               inner -> "INNER JOIN ";
-               left -> "LEFT JOIN ";
-               right -> "RIGHT JOIN ";
-               full -> "FULL JOIN "
-           end,
-    Table =
-        case JoinTable of
-            {table, Name1} -> erma_utils:escape_name(Name1);
-            {table, Name1, as, Alias1} -> [erma_utils:escape_name(Name1),
-                                           " AS ", erma_utils:escape_name(Alias1)]
-        end,
-    ToAlias =
-        case ToTable of
-            {table, Name2} -> erma_utils:escape_name(Name2);
-            {table, _, as, Alias2} -> erma_utils:escape_name(Alias2)
-        end,
+-spec build_join_entity(string(), table_name(), table_name(), [join_prop()]) -> iolist().
+build_join_entity(Join, JoinTable, ToTable, JoinProps) ->
+    Table = case JoinTable of
+                {Name1, as, Alias1} -> [erma_utils:escape_name(Name1),
+                                        " AS ", erma_utils:escape_name(Alias1)];
+                Name1 -> erma_utils:escape_name(Name1)
+            end,
+    ToAlias = case ToTable of
+                  {_, as, Alias2} -> erma_utils:escape_name(Alias2);
+                  Name2 -> erma_utils:escape_name(Name2)
+              end,
     {JoinName, JoinAlias} =
         case JoinTable of
-            {table, Name3} ->
-                {Name3, erma_utils:escape_name(Name3)};
-            {table, Name4, as, Alias4} ->
-                {Name4, erma_utils:escape_name(Alias4)}
+            {Name3, as, Alias3} -> {Name3, erma_utils:escape_name(Alias3)};
+            Name4 -> {Name4, erma_utils:escape_name(Name4)}
         end,
     PrimaryKey = case proplists:get_value(pk, JoinProps) of
                      undefined -> "id";
@@ -181,7 +141,7 @@ build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
 
 
--spec build_where([entity()]) -> iolist().
+-spec build_where(list()) -> iolist().
 build_where(Entities) ->
     case proplists:get_value(where, Entities) of
         undefined -> [];
@@ -267,7 +227,7 @@ build_value(Value) when is_binary(Value) -> build_value(unicode:characters_to_li
 build_value(Value) when is_list(Value) -> ["'", Value, "'"].
 
 
--spec build_order([entity()]) -> iolist().
+-spec build_order(list()) -> iolist().
 build_order(Entities) ->
     case proplists:get_value(order, Entities) of
         undefined -> [];
@@ -278,14 +238,14 @@ build_order(Entities) ->
     end.
 
 
--spec build_order_entity(order_value()) -> iolist().
+-spec build_order_entity(name() | {name(), atom()}) -> iolist().
 build_order_entity({Field, asc}) -> [erma_utils:escape_name(Field), " ASC"];
 build_order_entity({Field, desc}) -> [erma_utils:escape_name(Field), " DESC"];
 build_order_entity(Field) -> [erma_utils:escape_name(Field), " ASC"].
 
 
--spec build_offset_limit([entity()]) -> iolist().
-build_offset_limit(Entities) ->
+-spec build_limit(list()) -> iolist().
+build_limit(Entities) ->
     F = fun(Key, Str) ->
                 case proplists:get_value(Key, Entities) of
                     undefined -> "";
@@ -303,23 +263,17 @@ build_offset_limit(Entities) ->
     end.
 
 
--spec build_returning([entity()]) -> iolist().
+-spec build_returning(list()) -> iolist().
 build_returning(Entities) ->
     case proplists:get_value(returning, Entities) of
         undefined -> [];
-        Val -> build_returning_entity({returning, Val})
+        id -> " RETURNING id";
+        Names -> Names2 = lists:map(fun erma_utils:escape_name/1, Names),
+                 [" RETURNING ", string:join(Names2, ", ")]
     end.
 
 
--spec build_returning_entity(returning_entity()) -> iolist().
-build_returning_entity({returning, id}) ->
-    " RETURNING id";
-build_returning_entity({returning, Fields}) ->
-    Fields2 = lists:map(fun erma_utils:escape_name/1, Fields),
-    [" RETURNING ", string:join(Fields2, ", ")].
-
-
--spec merge([entity()], [entity()]) -> [entity()].
+%% TODO implementation and spec
 merge([], Entities2) -> Entities2;
 merge(Entities1, []) -> Entities1;
 merge([{Tag, Props1} | Rest], Entities2) ->
