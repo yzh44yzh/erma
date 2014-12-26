@@ -74,23 +74,6 @@ relations5_test() ->
 
 
 
-relations6_test() ->
-    TUser = {"user", as, "u"},
-    TEmail = "email",
-    TAddress = {"address", as, "a"},
-    TAccount = "account",
-    Select1 = {select, ["u.id", "email.email", "a.state", "account.name"], TUser,
-               [{joins, [{left, TEmail}]}]},
-    Select2 = erma:append(Select1, [{joins, [{left, TAddress}, {right, TAccount}]}]),
-    ?assertEqual(<<"SELECT u.id, email.email, `a`.`state`, account.`name` ",
-                   "FROM `user` AS u ",
-                   "LEFT JOIN email ON email.id = u.email_id ",
-                   "LEFT JOIN address AS `a` ON `a`.id = u.address_id ",
-                   "RIGHT JOIN account ON account.id = u.account_id">>,
-                 erma:build(Select2)),
-    ok.
-
-
 relations7_test() ->
     TUser = {"user", as, "u"},
     TEmail = {"email", as, "e"},
@@ -212,4 +195,37 @@ relations14_test() ->
                    "WHERE (s.`state` = 'nc' AND `a`.id > 5)">>,
                  erma:build(Select2)),
 
+    ok.
+
+
+relations15_test() ->
+    Q4 = {select, ["first_name", "last_name", "address.state"], "user",
+          [{joins, [{left, "address"}]}]},
+    S4 = <<"SELECT first_name, last_name, address.`state` ",
+           "FROM `user` ",
+           "LEFT JOIN address ON address.id = `user`.address_id">>,
+    ?assertEqual(S4, erma:build(Q4)),
+
+    Q5 = {select, ["first_name", "last_name", "address.state"], "user",
+          [{joins, [{left, "address"}]},
+           {where, [{"email", "some@where.com"}]}
+          ]},
+    S5 = <<"SELECT first_name, last_name, address.`state` ",
+           "FROM `user` ",
+           "LEFT JOIN address ON address.id = `user`.address_id ",
+           "WHERE email = 'some@where.com'">>,
+    ?assertEqual(S5, erma:build(Q5)),
+    ok.
+
+
+relations16_test() ->
+    TAddress = {"addresses", as, "address"},
+    TUser = {"foo_users", as, "user"},
+    Q = {select, [], TUser,
+         [{joins, [{left, TAddress, [{pk, "userID"}, {fk, "userID"}]}]},
+          {where, [{"last_login", lt, {date, {2014, 1, 20}}}]}]},
+    ?assertEqual(<<"SELECT * FROM foo_users AS `user` ",
+                   "LEFT JOIN addresses AS address ON address.userID = `user`.userID ",
+                   "WHERE last_login < '2014-01-20'">>,
+                 erma:build(Q)),
     ok.

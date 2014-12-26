@@ -87,10 +87,6 @@ returning3_test() ->
     D2 = {delete, "users", [{where, []}, {returning, id}]},
     ?assertEqual(Q2, erma:build(D2)),
 
-    Q3 = <<"DELETE FROM users WHERE id = 3 RETURNING id">>,
-    D3 = {delete, "users", [{where, [{"id", 3}]}, {returning, id}]},
-    ?assertEqual(Q3, erma:build(D3)),
-
     Q4 = <<"DELETE FROM users RETURNING `name`, age">>,
     D4 = {delete, "users", [{returning, ["name", "age"]}]},
     ?assertEqual(Q4, erma:build(D4)),

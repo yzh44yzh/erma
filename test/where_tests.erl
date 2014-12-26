@@ -3,22 +3,6 @@
 -include("erma.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-where1_test() ->
-    Select0 = {select, [], "post"},
-    ?assertEqual(<<"SELECT * FROM post">>, erma:build(Select0)),
-
-    Select1 = erma:append(Select0, [{where, [{"user_id", 10}]}]),
-    ?assertEqual(<<"SELECT * FROM post WHERE user_id = 10">>,
-                 erma:build(Select1)),
-
-    Select2 = erma:append(Select1, [{where, [{'not', {"blocked", true}},
-                                             {"posted", '>', {date, {2014, 2, 20}}}]}]),
-    ?assertEqual(<<"SELECT * FROM post ",
-                   "WHERE user_id = 10 AND (NOT blocked = true) AND posted > '2014-02-20'">>,
-                 erma:build(Select2)),
-    ok.
-
-
 where2_test() ->
     ?assertEqual(<<"SELECT * FROM post ",
                    "WHERE (title LIKE '%funny%' OR subject LIKE '%funny%' OR content LIKE '%funny%')">>,
