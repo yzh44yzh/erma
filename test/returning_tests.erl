@@ -49,21 +49,21 @@ returning2_test() ->
     ?assertEqual(Q1, erma:build(U1)),
 
     Q2 = <<"UPDATE users SET `first` = ? WHERE id = ? RETURNING id, `first`">>,
-    U2 = {update, <<"users">>, ["first"],
+    U2 = {update, <<"users">>, [{"first", "?"}],
           [{where, [{"id", "?"}]},
            {returning, [<<"id">>, <<"first">>]}]},
     ?assertEqual(Q2, erma:build(U2)),
 
     Q3 = <<"UPDATE users SET `first` = 'Chris', `last` = ? WHERE id = ? ",
            "RETURNING id, `name`, `first`, `last`, age">>,
-    U3 = {update, "users", [{"first", "Chris"}, "last"],
+    U3 = {update, "users", [{"first", "Chris"}, {"last", "?"}],
           [{where, [{"id", "?"}]},
            {returning, ["id", "name", <<"first">>, "last", <<"age">>]}]},
     ?assertEqual(Q3, erma:build(U3)),
 
     Q4 = <<"UPDATE users SET `first` = ?, `last` = ? RETURNING id">>,
     U4 = {update, "users",
-          ["first", "last"],
+          [{"first", "?"}, {"last", "?"}],
           [{returning, ["id"]}]},
     ?assertEqual(Q4, erma:build(U4)),
 

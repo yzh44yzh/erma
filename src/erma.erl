@@ -22,7 +22,7 @@ build({delete, Table}) -> build_delete(Table, []);
 build({delete, Table, Entities}) -> build_delete(Table, Entities).
 
 
--spec build_select(select(), [field()], table_name(), [join() | where() | order() | limit()]) -> sql().
+-spec build_select(string(), [field()], table_name(), [join() | where() | order() | limit()]) -> sql().
 build_select(Select, Fields, Table, Entities) ->
     unicode:characters_to_binary([Select, build_fields(Fields), " FROM ",
                                   prepare_table_name(Table),
@@ -33,7 +33,7 @@ build_select(Select, Fields, Table, Entities) ->
                                  ]).
 
 
--spec build_insert(name(), [name()], [[value()]], [returning()]) -> sql().
+-spec build_insert(table_name(), [name()], [[value()]], [returning()]) -> sql().
 build_insert(Table, Names, Rows, Entities) ->
     Names2 = case Names of
                 [] -> [];
@@ -47,26 +47,26 @@ build_insert(Table, Names, Rows, Entities) ->
                         end, Rows),
     Rows3 = string:join(Rows2, ", "),
     unicode:characters_to_binary(["INSERT INTO ",
-                                  prepare_name(Table),
+                                  prepare_table_name(Table),
                                   Names2, " VALUES ", Rows3,
                                   build_returning(Entities)]).
 
 
--spec build_update(name(), [{name(), value()}], [where() | returning()]) -> sql().
+-spec build_update(table_name(), [{name(), value()}], [where() | returning()]) -> sql().
 build_update(Table, KV, Entities) ->
-    Values = lists:map(fun({K, V}) -> [prepare_name(K), " = ", prepare_value(V)];
-                          (K) -> [prepare_name(K), " = ?"]
+    Values = lists:map(fun({K, V}) ->
+                               [prepare_name(K), " = ", prepare_value(V)]
                        end, KV),
     Values2 = string:join(Values, ", "),
-    unicode:characters_to_binary(["UPDATE ", prepare_name(Table),
+    unicode:characters_to_binary(["UPDATE ", prepare_table_name(Table),
                                   " SET ", Values2,
                                   build_where(Entities),
                                   build_returning(Entities)]).
 
 
--spec build_delete(name(), [where() | returning()]) -> sql().
+-spec build_delete(table_name(), [where() | returning()]) -> sql().
 build_delete(Table, Entities) ->
-    unicode:characters_to_binary(["DELETE FROM ", prepare_name(Table),
+    unicode:characters_to_binary(["DELETE FROM ", prepare_table_name(Table),
                                   build_where(Entities),
                                   build_returning(Entities)]).
 

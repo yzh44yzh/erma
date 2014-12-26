@@ -14,7 +14,7 @@ update1_test() ->
 
     Q2 = <<"UPDATE users SET `first` = ?, `last` = ? WHERE id = ?">>,
     U2 = {update, "users",
-          ["first", "last"],
+          [{"first", "?"}, {"last", "?"}],
           [{where, [{"id", "?"}]}]},
     ?assertEqual(Q2, erma:build(U2)),
 
@@ -25,7 +25,7 @@ update1_test() ->
     ?assertEqual(Q3, erma:build(U3)),
 
     Q4 = <<"UPDATE users SET `first` = ?, `last` = ?">>,
-    U4 = {update, "users", ["first", "last"]},
+    U4 = {update, "users", [{"first", "?"}, {"last", "?"}]},
     ?assertEqual(Q4, erma:build(U4)),
     ok.
 
@@ -36,10 +36,10 @@ update2_test() ->
     ?assertEqual(Q1, erma:build(U1)),
 
     Q2 = <<"UPDATE users SET `first` = ? WHERE id = ?">>,
-    U2 = {update, "users", ["first"], [{where, [{"id", "?"}]}]},
+    U2 = {update, "users", [{"first", "?"}], [{where, [{"id", "?"}]}]},
     ?assertEqual(Q2, erma:build(U2)),
 
     Q3 = <<"UPDATE users SET `first` = 'Chris', `last` = ? WHERE id = ?">>,
-    U3 = {update, "users", [{"first", "Chris"}, "last"], [{where, [{"id", "?"}]}]},
+    U3 = {update, "users", [{"first", "Chris"}, {"last", "?"}], [{where, [{"id", "?"}]}]},
     ?assertEqual(Q3, erma:build(U3)),
     ok.

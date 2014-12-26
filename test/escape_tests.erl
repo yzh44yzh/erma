@@ -114,8 +114,7 @@ escape7_test() ->
 
     Q2 = <<"INSERT INTO `my-post` (`@name`, `status`) ",
            "VALUES ('Bob', 'active'), ('Bill', 'blocked')">>,
-    I2 = {insert_rows, "my-post",
-          ["@name", "status"], [["Bob", "active"], ["Bill", "blocked"]]},
+    I2 = {insert_rows, "my-post", ["@name", "status"], [["Bob", "active"], ["Bill", "blocked"]]},
     ?assertEqual(Q2, erma:build(I2)),
 
     ok.

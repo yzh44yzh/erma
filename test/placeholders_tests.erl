@@ -38,7 +38,7 @@ placeholders2_test() ->
 
 placeholders3_test() ->
     Q1 = <<"UPDATE users SET `first` = 'Chris', `last` = ? WHERE id = ?">>,
-    U1 = {update, "users", [{"first", "Chris"}, "last"], [{where, [{"id", "?"}]}]},
+    U1 = {update, "users", [{"first", "Chris"}, {"last", "?"}], [{where, [{"id", "?"}]}]},
     ?assertEqual(Q1, erma:build(U1)),
 
     Q2 = <<"UPDATE users SET `first` = 'Chris', `last` = $2 WHERE id = $1">>,

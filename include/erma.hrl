@@ -7,8 +7,6 @@
 
 -type select() :: select | select_distinct.
 
--type insert() :: insert | insert_rows.
-
 -type table_name() :: name() | {name(), as, name()}.
 
 -type agg_fun() :: atom().
@@ -44,8 +42,10 @@
 -type select_query() :: {select(), [field()], table_name()} |
                         {select(), [field()], table_name(), [join() | where() | order() | limit()]}.
 
--type insert_query() :: {insert(), table_name(), [name()], [value()]} |
-                        {insert(), table_name(), [name()], [value()], [returning()]}.
+-type insert_query() :: {insert, table_name(), [name()], [value()]} |
+                        {insert, table_name(), [name()], [value()], [returning()]} |
+                        {insert_rows, table_name(), [name()], [[value()]]} |
+                        {insert_rows, table_name(), [name()], [[value()]], [returning()]}.
 
 -type update_query() :: {update, table_name(), [{name(), value()}]} |
                         {update, table_name(), [{name(), value()}], [where() | returning()]}.
