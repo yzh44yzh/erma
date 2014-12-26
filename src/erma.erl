@@ -137,13 +137,13 @@ build_join_entity(Join, JoinTable, ToTable, JoinProps) ->
             {Name3, as, Alias3} -> {Name3, prepare_name(Alias3)};
             Name4 -> {Name4, prepare_name(Name4)}
         end,
-    PrimaryKey = case proplists:get_value(pk, JoinProps) of
-                     undefined -> "id";
-                     Pk -> prepare_name(Pk)
+    PrimaryKey = case lists:keyfind(pk, 1, JoinProps) of
+                     false -> "id";
+                     {pk, Pk} -> prepare_name(Pk)
                  end,
-    ForeignKey = case proplists:get_value(fk, JoinProps) of
-                     undefined -> prepare_name([JoinName, "_id"]);
-                     Fk -> prepare_name(Fk)
+    ForeignKey = case lists:keyfind(fk, 1, JoinProps) of
+                     false -> prepare_name([JoinName, "_id"]);
+                     {fk, Fk} -> prepare_name(Fk)
                  end,
     io:format("ToAlias:~p, JoinName:~p, ForeignKey:~p~n", [ToAlias, JoinName, ForeignKey]),
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
@@ -151,15 +151,16 @@ build_join_entity(Join, JoinTable, ToTable, JoinProps) ->
 
 -spec build_where(list()) -> iolist().
 build_where(Conditions) ->
-    case proplists:get_value(where, Conditions) of
-        undefined -> [];
-        [] -> [];
-        WConditions -> W1 = lists:map(fun build_where_condition/1, WConditions),
-                     case lists:flatten(W1) of
-                         [] -> [];
-                         _ -> W2 = string:join(W1, " AND "),
-                              [" WHERE ", W2]
-                     end
+    case lists:keyfind(where, 1, Conditions) of
+        false -> [];
+        {where, []} -> [];
+        {where, WConditions} ->
+            W1 = lists:map(fun build_where_condition/1, WConditions),
+            case lists:flatten(W1) of
+                [] -> [];
+                _ -> W2 = string:join(W1, " AND "),
+                     [" WHERE ", W2]
+            end
     end.
 
 -spec build_where_condition(where_condition()) -> iolist().
@@ -219,12 +220,13 @@ build_where_condition({Key, Value}) ->
 
 -spec build_order(list()) -> iolist().
 build_order(Entities) ->
-    case proplists:get_value(order, Entities) of
-        undefined -> [];
-        [] -> [];
-        OEntities -> O1 = lists:map(fun(Entity) -> build_order_entity(Entity) end, OEntities),
-                     O2 = string:join(O1, ", "),
-                     [" ORDER BY ", O2]
+    case lists:keyfind(order, 1, Entities) of
+        false -> [];
+        {order, []} -> [];
+        {order, OEntities} ->
+            O1 = lists:map(fun(Entity) -> build_order_entity(Entity) end, OEntities),
+            O2 = string:join(O1, ", "),
+            [" ORDER BY ", O2]
     end.
 
 
@@ -244,11 +246,12 @@ build_limit(Entities) ->
 
 -spec build_returning(list()) -> iolist().
 build_returning(Entities) ->
-    case proplists:get_value(returning, Entities) of
-        undefined -> [];
-        id -> " RETURNING id";
-        Names -> Names2 = lists:map(fun erma_utils:prepare_name/1, Names),
-                 [" RETURNING ", string:join(Names2, ", ")]
+    case lists:keyfind(returning, 1, Entities) of
+        false -> [];
+        {returning, id} -> " RETURNING id";
+        {returning, Names} ->
+            Names2 = lists:map(fun erma_utils:prepare_name/1, Names),
+            [" RETURNING ", string:join(Names2, ", ")]
     end.
 
 
@@ -256,7 +259,7 @@ build_returning(Entities) ->
 merge([], Entities2) -> Entities2;
 merge(Entities1, []) -> Entities1;
 merge([{Tag, Props1} | Rest], Entities2) ->
-    case proplists:get_value(Tag, Entities2) of
-        undefined -> [{Tag, Props1} | merge(Rest, Entities2)];
-        Props2 -> [{Tag, Props1 ++ Props2} | merge(Rest, proplists:delete(Tag, Entities2))]
+    case lists:keyfind(Tag, 1, Entities2) of
+        false -> [{Tag, Props1} | merge(Rest, Entities2)];
+        {Tag, Props2} -> [{Tag, Props1 ++ Props2} | merge(Rest, lists:keydelete(Tag, 1, Entities2))]
     end.
