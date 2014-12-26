@@ -30,22 +30,22 @@ escape1_test() ->
 
 escape2_test() ->
     Q1 = <<"SELECT * FROM users LEFT JOIN address ON address.id = users.address_id">>,
-    S1 = {select, [], "users", [{left_join, "address"}]},
+    S1 = {select, [], "users", [{joins, [{left, "address"}]}]},
     ?assertEqual(Q1, erma:build(S1)),
 
     Q2 = <<"SELECT * FROM `user` LEFT JOIN address ON address.id = `user`.address_id">>,
-    S2 = {select, [], "user", [{left_join, "address"}]},
+    S2 = {select, [], "user", [{joins, [{left, "address"}]}]},
     ?assertEqual(Q2, erma:build(S2)),
 
     Q3 = <<"SELECT * FROM `user` LEFT JOIN address AS `a` ON `a`.id = `user`.address_id">>,
-    S3 = {select, [], "user", [{left_join, {"address", as, "a"}}]},
+    S3 = {select, [], "user", [{joins, [{left, {"address", as, "a"}}]}]},
     ?assertEqual(Q3, erma:build(S3)),
 
     Q4 = <<"SELECT `scope`.id, `a`.`state` ",
            "FROM `state` AS `scope` ",
            "LEFT JOIN `result` AS `a` ON `a`.id = `scope`.result_id">>,
     S4 = {select, ["scope.id", "a.state"], {"state", as, "scope"},
-          [{left_join, {"result", as, "a"}}]},
+          [{joins, [{left, {"result", as, "a"}}]}]},
     ?assertEqual(Q4, erma:build(S4)),
 
     ok.
@@ -54,22 +54,22 @@ escape2_test() ->
 escape4_test() ->
     Q1 = <<"SELECT * FROM users ",
            "LEFT JOIN address ON address.`state` = users.address_id">>,
-    S1 = {select, [], "users", [{left_join, "address", [{pk, "state"}]}]},
+    S1 = {select, [], "users", [{joins, [{left, "address", [{pk, "state"}]}]}]},
     ?assertEqual(Q1, erma:build(S1)),
 
     Q2 = <<"SELECT * FROM users ",
            "LEFT JOIN address ON address.id = users.`state`">>,
-    S2 = {select, [], "users", [{left_join, "address", [{fk, "state"}]}]},
+    S2 = {select, [], "users", [{joins, [{left, "address", [{fk, "state"}]}]}]},
     ?assertEqual(Q2, erma:build(S2)),
 
     Q3 = <<"SELECT * FROM users ",
            "LEFT JOIN address ON address.`a` = users.`state`">>,
-    S3 = {select, [], "users", [{left_join, "address", [{pk, "a"}, {fk, "state"}]}]},
+    S3 = {select, [], "users", [{joins, [{left, "address", [{pk, "a"}, {fk, "state"}]}]}]},
     ?assertEqual(Q3, erma:build(S3)),
 
     Q4 = <<"SELECT * FROM `user` ",
            "LEFT JOIN `result` ON `result`.`a` = `user`.`state`">>,
-    S4 = {select, [], "user", [{left_join, "result", [{pk, "a"}, {fk, "state"}]}]},
+    S4 = {select, [], "user", [{joins, [{left, "result", [{pk, "a"}, {fk, "state"}]}]}]},
     ?assertEqual(Q4, erma:build(S4)),
     ok.
 

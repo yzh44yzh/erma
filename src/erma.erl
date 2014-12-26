@@ -22,7 +22,7 @@ build({delete, Table}) -> build_delete(Table, []);
 build({delete, Table, Entities}) -> build_delete(Table, Entities).
 
 
--spec build_select(string(), [field()], table_name(), [join() | where() | order() | limit()]) -> sql().
+-spec build_select(string(), [field()], table_name(), [joins() | where() | order() | limit()]) -> sql().
 build_select(Select, Fields, Table, Entities) ->
     unicode:characters_to_binary([Select, build_fields(Fields), " FROM ",
                                   prepare_table_name(Table),
@@ -99,34 +99,31 @@ build_fields(Fields) ->
 
 -spec build_joins(table_name(), list()) -> iolist().
 build_joins(MainTable, Entities) ->
-    %% TODO refacto this ugly code
-    Joins = lists:filtermap(
-              fun({inner_join, {JoinTable, ToTable}}) -> {true, build_join_entity("INNER JOIN ", JoinTable, ToTable, [])};
-                 ({inner_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("INNER JOIN ", JoinTable, ToTable, Props)};
-                 ({left_join, {JoinTable, ToTable}}) -> {true, build_join_entity("LEFT JOIN ", JoinTable, ToTable, [])};
-                 ({left_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("LEFT JOIN ", JoinTable, ToTable, Props)};
-                 ({right_join, {JoinTable, ToTable}}) -> {true, build_join_entity("RIGHT JOIN ", JoinTable, ToTable, [])};
-                 ({right_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("RIGHT JOIN ", JoinTable, ToTable, Props)};
-                 ({full_join, {JoinTable, ToTable}}) -> {true, build_join_entity("FULL JOIN ", JoinTable, ToTable, [])};
-                 ({full_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("FULL JOIN ", JoinTable, ToTable, Props)};
-                 ({inner_join, Table}) -> {true, build_join_entity("INNER JOIN ", Table, MainTable, [])};
-                 ({inner_join, Table, Props}) -> {true, build_join_entity("INNER JOIN ", Table, MainTable, Props)};
-                 ({left_join, Table}) -> {true, build_join_entity("LEFT JOIN ", Table, MainTable, [])};
-                 ({left_join, Table, Props}) -> {true, build_join_entity("LEFT JOIN ", Table, MainTable, Props)};
-                 ({right_join, Table}) -> {true, build_join_entity("RIGHT JOIN ", Table, MainTable, [])};
-                 ({right_join, Table, Props}) -> {true, build_join_entity("RIGHT JOIN ", Table, MainTable, Props)};
-                 ({full_join, Table}) -> {true, build_join_entity("FULL JOIN ", Table, MainTable, [])};
-                 ({full_join, Table, Props}) -> {true, build_join_entity("FULL JOIN ", Table, MainTable, Props)};
-                 (_) -> false
-              end, Entities),
-    case Joins of
-        [] -> [];
-        _ -> [" ", string:join(Joins, " ")]
+    case lists:keyfind(joins, 1, Entities) of
+        false -> [];
+        {joins, []} -> [];
+        {joins, JEntities} ->
+            Joins = lists:map(
+                      fun({JoinType, {JoinTable, ToTable}}) -> build_join_entity(JoinType, JoinTable, ToTable, []);
+                         ({JoinType, {JoinTable, ToTable}, Props}) -> build_join_entity(JoinType, JoinTable, ToTable, Props);
+                         ({JoinType, JoinTable}) -> build_join_entity(JoinType, JoinTable, MainTable, []);
+                         ({JoinType, JoinTable, Props}) -> build_join_entity(JoinType, JoinTable, MainTable, Props)
+                      end, JEntities),
+            case lists:flatten(Joins) of
+                [] -> [];
+                _ -> [" ", string:join(Joins, " ")]
+            end
     end.
 
 
--spec build_join_entity(string(), table_name(), table_name(), [join_prop()]) -> iolist().
-build_join_entity(Join, JoinTable, ToTable, JoinProps) ->
+-spec build_join_entity(join_type(), table_name(), table_name(), [join_prop()]) -> iolist().
+build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
+    Join = case JoinType of
+               inner -> "INNER JOIN ";
+               left -> "LEFT JOIN ";
+               right -> "RIGHT JOIN ";
+               full -> "FULL JOIN "
+           end,
     Table = prepare_table_name(JoinTable),
     ToAlias = case ToTable of
                   {_, as, Alias2} -> prepare_name(Alias2);

@@ -21,14 +21,14 @@ simple_test() ->
     ?assertEqual(S3, erma:build(Q3)),
 
     Q4 = {select, ["first_name", "last_name", "address.state"], "user",
-          [{left_join, "address"}]},
+          [{joins, [{left, "address"}]}]},
     S4 = <<"SELECT first_name, last_name, address.`state` ",
            "FROM `user` ",
            "LEFT JOIN address ON address.id = `user`.address_id">>,
     ?assertEqual(S4, erma:build(Q4)),
 
     Q5 = {select, ["first_name", "last_name", "address.state"], "user",
-          [{left_join, "address"},
+          [{joins, [{left, "address"}]},
            {where, [{"email", "some@where.com"}]}
           ]},
     S5 = <<"SELECT first_name, last_name, address.`state` ",
@@ -139,7 +139,7 @@ complex_test() ->
     TAddress = {"addresses", as, "address"},
     TUser = {"foo_users", as, "user"},
     Q = {select, [], TUser,
-         [{left_join, TAddress, [{pk, "userID"}, {fk, "userID"}]},
+         [{joins, [{left, TAddress, [{pk, "userID"}, {fk, "userID"}]}]},
           {where, [{"last_login", lt, {date, {2014, 1, 20}}}]}]},
     ?assertEqual(<<"SELECT * FROM foo_users AS `user` ",
                    "LEFT JOIN addresses AS address ON address.userID = `user`.userID ",

@@ -13,11 +13,11 @@
 
 -type field() :: name() | {name(), as, name()} | {agg_fun(), name()}.
 
--type join() :: {join_type(), table_name()} |
-                {join_type(), table_name(), [join_prop()]} |
-                {join_type(), {table_name(), table_name()}} |
-                {join_type(), {table_name(), table_name()}, [join_prop()]}.
--type join_type() :: inner_join | left_join | right_join | full_join.
+-type joins() :: {joins, [join()]}.
+-type join() :: {join_type(), join_tables()} |
+                {join_type(), join_tables(), [join_prop()]}.
+-type join_type() :: inner | left | right | full.
+-type join_tables() :: table_name() | {table_name(), table_name()}.
 -type join_prop() :: {pk, name()} | {fk, name()}.
 
 -type where() :: {where, [where_condition()]}.
@@ -40,7 +40,7 @@
 -type returning() :: {returning, id} | {returning, [name()]}.
 
 -type select_query() :: {select(), [field()], table_name()} |
-                        {select(), [field()], table_name(), [join() | where() | order() | limit()]}.
+                        {select(), [field()], table_name(), [joins() | where() | order() | limit()]}.
 
 -type insert_query() :: {insert, table_name(), [name()], [value()]} |
                         {insert, table_name(), [name()], [value()], [returning()]} |

@@ -9,7 +9,7 @@ unicode1_test() ->
     ?assertEqual(<<"SELECT * FROM `пользователь`"/utf8>>, erma:build(Select1)),
 
     Select2 = {select, [], <<"пользователь"/utf8>>,
-              [{where, [{"email", "some@where.com"}]}]},
+               [{where, [{"email", "some@where.com"}]}]},
     ?assertEqual(<<"SELECT * FROM `пользователь` WHERE email = 'some@where.com'"/utf8>>,
                  erma:build(Select2)),
 
@@ -22,7 +22,7 @@ unicode1_test() ->
 
     TAddress = <<"адрес"/utf8>>,
     Select4 = {select, ["first_name", "last_name", "address.state"], <<"пользователь"/utf8>>,
-              [{left_join, TAddress}]},
+               [{joins, [{left, TAddress}]}]},
     ?assertEqual(<<"SELECT first_name, last_name, address.`state` ",
                    "FROM `пользователь` "/utf8,
                    "LEFT JOIN `адрес` ON `адрес`.id = `пользователь`.`адрес_id`"/utf8>>,
