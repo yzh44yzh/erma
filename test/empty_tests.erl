@@ -6,45 +6,25 @@
 
 empty_where_test() ->
     ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, {table, "users"},
-                             [{fields, ["id", "username"]},
-                              {where, []}]})),
+                 erma:build({select, ["id", "username"], "users",
+                             [{where, []}]})),
     ok.
 
 
 empty_and_or_test() ->
     ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, {table, "users"},
-                             [{fields, ["id", "username"]},
-                              {where, [{'and', []}]
-                              }]})),
+                 erma:build({select, ["id", "username"], <<"users">>,
+                             [{where, [{'and', []}]}]})),
     ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, {table, "users"},
-                             [{fields, ["id", "username"]},
-                              {where, [{'or', []}]
-                              }]})),
+                 erma:build({select, ["id", "username"], users,
+                             [{where, [{'or', []}]}]})),
     ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, {table, "users"},
-                             [{fields, ["id", "username"]},
-                              {where, [{'and', [{'and', []},
-                                                {'or', []}]}]}
-                              ]})),
+                 erma:build({select, ["id", "username"], "users",
+                             [{where, [{'and', [{'and', []}, {'or', []}]}]}]})),
     ok.
-
-
-empty_joins_test() ->
-    ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, {table, "users"},
-                             [{fields, ["id", "username"]},
-                              {joins, []}
-                              ]})),
-    ok.
-
 
 empty_order_test() ->
     ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, {table, "users"},
-                             [{fields, ["id", "username"]},
-                              {order, []}
-                              ]})),
+                 erma:build({select, ["id", "username"], "users",
+                             [{order, []}]})),
     ok.

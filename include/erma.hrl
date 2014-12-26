@@ -16,7 +16,9 @@
 -type field() :: name() | {name(), as, name()} | {agg_fun(), name()}.
 
 -type join() :: {join_type(), table_name()} |
-                {join_type(), table_name(), [join_prop()]}.
+                {join_type(), table_name(), [join_prop()]} |
+                {join_type(), {table_name(), table_name()}} |
+                {join_type(), {table_name(), table_name()}, [join_prop()]}.
 -type join_type() :: inner_join | left_join | right_join | full_join.
 -type join_prop() :: {pk, name()} | {fk, name()}.
 
@@ -43,7 +45,7 @@
                         {select(), [field()], table_name(), [join() | where() | order() | limit()]}.
 
 -type insert_query() :: {insert(), table_name(), [name()], [value()]} |
-                        {insert(), table_name(), [name()], [value()], returning()}.
+                        {insert(), table_name(), [name()], [value()], [returning()]}.
 
 -type update_query() :: {update, table_name(), [{name(), value()}]} |
                         {update, table_name(), [{name(), value()}], [where() | returning()]}.

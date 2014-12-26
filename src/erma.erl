@@ -13,9 +13,9 @@ build({select, Fields, Table, Entities}) -> build_select("SELECT ", Fields, Tabl
 build({select_distinct, Fields, Table}) -> build_select("SELECT DISTINCT ", Fields, Table, []);
 build({select_distinct, Fields, Table, Entities}) -> build_select("SELECT DISTINCT ", Fields, Table, Entities);
 build({insert, Table, Names, Values}) -> build_insert(Table, Names, [Values], []);
-build({insert, Table, Names, Values, Returning}) -> build_insert(Table, Names, [Values], [Returning]);
+build({insert, Table, Names, Values, Entities}) -> build_insert(Table, Names, [Values], Entities);
 build({insert_rows, Table, Names, Rows}) -> build_insert(Table, Names, Rows, []);
-build({insert_rows, Table, Names, Rows, Returning}) -> build_insert(Table, Names, Rows, [Returning]);
+build({insert_rows, Table, Names, Rows, Entities}) -> build_insert(Table, Names, Rows, Entities);
 build({update, Table, KV}) -> build_update(Table, KV, []);
 build({update, Table, KV, Entities}) -> build_update(Table, KV, Entities);
 build({delete, Table}) -> build_delete(Table, []);
@@ -99,8 +99,17 @@ build_fields(Fields) ->
 
 -spec build_joins(table_name(), list()) -> iolist().
 build_joins(MainTable, Entities) ->
+    %% TODO refacto this ugly code
     Joins = lists:filtermap(
-              fun({inner_join, Table}) -> {true, build_join_entity("INNER JOIN ", Table, MainTable, [])};
+              fun({inner_join, {JoinTable, ToTable}}) -> {true, build_join_entity("INNER JOIN ", JoinTable, ToTable, [])};
+                 ({inner_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("INNER JOIN ", JoinTable, ToTable, Props)};
+                 ({left_join, {JoinTable, ToTable}}) -> {true, build_join_entity("LEFT JOIN ", JoinTable, ToTable, [])};
+                 ({left_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("LEFT JOIN ", JoinTable, ToTable, Props)};
+                 ({right_join, {JoinTable, ToTable}}) -> {true, build_join_entity("RIGHT JOIN ", JoinTable, ToTable, [])};
+                 ({right_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("RIGHT JOIN ", JoinTable, ToTable, Props)};
+                 ({full_join, {JoinTable, ToTable}}) -> {true, build_join_entity("FULL JOIN ", JoinTable, ToTable, [])};
+                 ({full_join, {JoinTable, ToTable}, Props}) -> {true, build_join_entity("FULL JOIN ", JoinTable, ToTable, Props)};
+                 ({inner_join, Table}) -> {true, build_join_entity("INNER JOIN ", Table, MainTable, [])};
                  ({inner_join, Table, Props}) -> {true, build_join_entity("INNER JOIN ", Table, MainTable, Props)};
                  ({left_join, Table}) -> {true, build_join_entity("LEFT JOIN ", Table, MainTable, [])};
                  ({left_join, Table, Props}) -> {true, build_join_entity("LEFT JOIN ", Table, MainTable, Props)};
@@ -118,11 +127,7 @@ build_joins(MainTable, Entities) ->
 
 -spec build_join_entity(string(), table_name(), table_name(), [join_prop()]) -> iolist().
 build_join_entity(Join, JoinTable, ToTable, JoinProps) ->
-    Table = case JoinTable of
-                {Name1, as, Alias1} -> [prepare_name(Name1),
-                                        " AS ", prepare_name(Alias1)];
-                Name1 -> prepare_name(Name1)
-            end,
+    Table = prepare_table_name(JoinTable),
     ToAlias = case ToTable of
                   {_, as, Alias2} -> prepare_name(Alias2);
                   Name2 -> prepare_name(Name2)
@@ -140,6 +145,7 @@ build_join_entity(Join, JoinTable, ToTable, JoinProps) ->
                      undefined -> prepare_name([JoinName, "_id"]);
                      Fk -> prepare_name(Fk)
                  end,
+    io:format("ToAlias:~p, JoinName:~p, ForeignKey:~p~n", [ToAlias, JoinName, ForeignKey]),
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
 
 

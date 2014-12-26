@@ -31,13 +31,14 @@ prepare_table_name({Name, as, Alias}) ->
 prepare_table_name(Name) -> prepare_name(Name).
 
 
--spec prepare_name(name()) -> iolist().
-prepare_name(Name) when is_atom(Name) ->
-    prepare_name(atom_to_list(Name));
-prepare_name(Name) when is_binary(Name) ->
-    prepare_name(unicode:characters_to_list(Name));
+-spec prepare_name(name() | [name()]) -> iolist().
+prepare_name(Name) when is_atom(Name) -> prepare_name(atom_to_list(Name));
+prepare_name(Name) when is_binary(Name) -> prepare_name(unicode:characters_to_list(Name));
 prepare_name(Name0) ->
-    Name = lists:flatten(Name0),
+    Name = unicode:characters_to_list(
+             lists:map(fun(Part) when is_atom(Part) -> atom_to_list(Part);
+                          (Any) -> Any
+                       end, Name0)),
     lists:flatten(
       case string:tokens(Name, ".") of
           [N1, "*"] -> [prepare_name(N1), ".*"];

@@ -10,7 +10,7 @@ select1_test() ->
                  erma:build({select, ["id", "username"], "users",
                              [{where, [{"username", "chris"}]},
                               {order, ["created"]},
-                              {limit, 5, offset, 3}]})),
+                              {offset, 3, limit, 5}]})),
 
     ?assertEqual(<<"SELECT email.* FROM email ",
                    "WHERE (email.email LIKE '%@gmail.com' AND email.user_id = 1)">>,
@@ -40,8 +40,7 @@ select2_test() ->
                  erma:build({select, [], users,
                              [{where, [{"active", true}]},
                               {order, ["created"]},
-                              {limit, 5},
-                              {offset, 3}]})),
+                              {offset, 3, limit, 5}]})),
     ok.
 
 

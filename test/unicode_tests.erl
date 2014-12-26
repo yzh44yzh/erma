@@ -5,99 +5,88 @@
 
 
 unicode1_test() ->
-    TUser = {table, <<"пользователь">>},
-    Select1 = {select, TUser, []},
-    ?assertEqual(<<"SELECT * FROM `пользователь`">>, erma:build(Select1)),
+    Select1 = {select, [], <<"пользователь"/utf8>>},
+    ?assertEqual(<<"SELECT * FROM `пользователь`"/utf8>>, erma:build(Select1)),
 
-    Select2 = {select, TUser,
+    Select2 = {select, [], <<"пользователь"/utf8>>,
               [{where, [{"email", "some@where.com"}]}]},
-    ?assertEqual(<<"SELECT * FROM `пользователь` WHERE email = 'some@where.com'">>,
+    ?assertEqual(<<"SELECT * FROM `пользователь` WHERE email = 'some@where.com'"/utf8>>,
                  erma:build(Select2)),
 
-    Select3 = {select, TUser,
-               [{fields, [<<"имя">>, <<"фамилия">>, "address.state"]},
-                {where, [{"email", <<"кто-то@где.то">>}]}
-              ]},
-    ?assertEqual(<<"SELECT `имя`, `фамилия`, address.`state` ",
-                   "FROM `пользователь` ",
-                   "WHERE email = 'кто-то@где.то'">>,
+    Select3 = {select, [<<"имя"/utf8>>, <<"фамилия"/utf8>>, "address.state"], <<"пользователь"/utf8>>,
+               [{where, [{"email", <<"кто-то@где.то"/utf8>>}]}]},
+    ?assertEqual(<<"SELECT `имя`, `фамилия`, address.`state` "/utf8,
+                   "FROM `пользователь` "/utf8,
+                   "WHERE email = 'кто-то@где.то'"/utf8>>,
                  erma:build(Select3)),
 
-    TAddress = {table, <<"адрес">>},
-    Select4 = {select, TUser,
-              [{joins, [{left, TAddress}]},
-               {fields, ["first_name", "last_name", "address.state"]}
-              ]},
+    TAddress = <<"адрес"/utf8>>,
+    Select4 = {select, ["first_name", "last_name", "address.state"], <<"пользователь"/utf8>>,
+              [{left_join, TAddress}]},
     ?assertEqual(<<"SELECT first_name, last_name, address.`state` ",
-                   "FROM `пользователь` ",
-                   "LEFT JOIN `адрес` ON `адрес`.id = `пользователь`.`адрес_id`">>,
+                   "FROM `пользователь` "/utf8,
+                   "LEFT JOIN `адрес` ON `адрес`.id = `пользователь`.`адрес_id`"/utf8>>,
                  erma:build(Select4)),
     ok.
 
 
 unicode2_test() ->
-    Select0 = {select, {table, <<"пользователь">>},
-               [{fields, ["id", "username"]},
-                {where, [{"email", like, "*@gmail.com"}]}
-               ]},
+    Select0 = {select, ["id", "username"], <<"пользователь"/utf8>>,
+               [{where, [{"email", like, "*@gmail.com"}]}]},
     ?assertEqual(<<"SELECT id, username ",
-                   "FROM `пользователь` ",
+                   "FROM `пользователь` "/utf8,
                    "WHERE email LIKE '*@gmail.com'">>,
                  erma:build(Select0)),
 
-    Select1 = erma:append(Select0, [{where, [{<<"активен">>, true}, {<<"возраст">>, '>', 18}]},
-                                    {order, [<<"дата_создания">>]}]),
+    Select1 = erma:append(Select0, [{where, [{<<"активен"/utf8>>, true}, {<<"возраст"/utf8>>, '>', 18}]},
+                                    {order, [<<"дата_создания"/utf8>>]}]),
     ?assertEqual(
-       {select, {table, <<"пользователь">>},
-        [{fields, ["id", "username"]},
-         {where, [{"email", like, "*@gmail.com"}, {<<"активен">>, true}, {<<"возраст">>, '>', 18}]},
-         {order, [<<"дата_создания">>]}
+       {select, ["id", "username"], <<"пользователь"/utf8>>,
+        [{where, [{"email", like, "*@gmail.com"}, {<<"активен"/utf8>>, true}, {<<"возраст"/utf8>>, '>', 18}]},
+         {order, [<<"дата_создания"/utf8>>]}
         ]},
        Select1),
     ?assertEqual(<<"SELECT id, username ",
-                   "FROM `пользователь` ",
+                   "FROM `пользователь` "/utf8,
                    "WHERE email LIKE '*@gmail.com' ",
-                   "AND `активен` = true ",
-                   "AND `возраст` > 18 ",
-                   "ORDER BY `дата_создания` ASC">>,
+                   "AND `активен` = true "/utf8,
+                   "AND `возраст` > 18 "/utf8,
+                   "ORDER BY `дата_создания` ASC"/utf8>>,
                  erma:build(Select1)),
     ok.
 
 
 unicode3_test() ->
-    Q1 = <<"INSERT INTO users (`first`, `last`) VALUES ('Боб', 'Дилан')">>,
-    S1 = {insert, {table, "users"},
-          [{"first", <<"Боб">>},
-           {"last", <<"Дилан">>}]},
+    Q1 = <<"INSERT INTO users (`first`, `last`) VALUES ('Боб', 'Дилан')"/utf8>>,
+    S1 = {insert, "users", ["first", "last"], [<<"Боб"/utf8>>, <<"Дилан"/utf8>>]},
     ?assertEqual(Q1, erma:build(S1)),
 
-    Q2 = <<"INSERT INTO `артисты` (`имя`, `фамилия`, `возраст`) VALUES ('Фреди', 'Меркьюри', 25)">>,
-    S2 = {insert, <<"артисты">>,
-          [{<<"имя">>, <<"Фреди">>},
-           {<<"фамилия">>, <<"Меркьюри">>},
-           {<<"возраст">>, 25}]},
+    Q2 = <<"INSERT INTO `артисты` (`имя`, `фамилия`, `возраст`) VALUES ('Фреди', 'Меркьюри', 25)"/utf8>>,
+    S2 = {insert, <<"артисты"/utf8>>,
+          [<<"имя"/utf8>>, <<"фамилия"/utf8>>, <<"возраст"/utf8>>],
+          [<<"Фреди"/utf8>>, <<"Меркьюри"/utf8>>, 25]},
     ?assertEqual(Q2, erma:build(S2)),
     ok.
 
 
 unicode4_test() ->
-    Q1 = <<"UPDATE users SET `first` = 'Джон', `last` = 'Леннон' WHERE id = 3">>,
-    U1 = {update, {table, "users"},
-          [{"first", <<"Джон">>},
-           {"last", <<"Леннон">>}],
-          {where, [{"id", 3}]}},
+    Q1 = <<"UPDATE users SET `first` = 'Джон', `last` = 'Леннон' WHERE id = 3"/utf8>>,
+    U1 = {update, "users",
+          [{"first", <<"Джон"/utf8>>},
+           {"last", <<"Леннон"/utf8>>}],
+          [{where, [{"id", 3}]}]},
     ?assertEqual(Q1, erma:build(U1)),
 
-    Q2 = <<"UPDATE `чуваки` SET `погоняло` = ?, `крутизна` = ? WHERE id = ?">>,
-    U2 = {update, {table, <<"чуваки">>},
-          [<<"погоняло">>, <<"крутизна">>],
-          {where, [{"id", "?"}]}},
+    Q2 = <<"UPDATE `чуваки` SET `погоняло` = ?, `крутизна` = ? WHERE id = ?"/utf8>>,
+    U2 = {update, <<"чуваки"/utf8>>,
+          [<<"погоняло"/utf8>>, <<"крутизна"/utf8>>],
+          [{where, [{"id", "?"}]}]},
     ?assertEqual(Q2, erma:build(U2)),
     ok.
 
 
 unicode5_test() ->
-    Q = <<"DELETE FROM `пользователь` WHERE id = 3">>,
-    D = {delete, <<"пользователь">>, {where, [{"id", 3}]}},
+    Q = <<"DELETE FROM `пользователь` WHERE id = 3"/utf8>>,
+    D = {delete, <<"пользователь"/utf8>>, [{where, [{"id", 3}]}]},
     ?assertEqual(Q, erma:build(D)),
     ok.
