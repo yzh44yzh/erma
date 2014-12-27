@@ -3,7 +3,7 @@
 -include("erma.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-relations_test_() ->
+returning_test_() ->
     test_utils:generate(
       [{
          %%

@@ -3,28 +3,35 @@
 -include("erma.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-
-empty_where_test() ->
-    ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, ["id", "username"], "users",
-                             [{where, []}]})),
-    ok.
-
-
-empty_and_or_test() ->
-    ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, ["id", "username"], <<"users">>,
-                             [{where, [{'and', []}]}]})),
-    ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, ["id", "username"], users,
-                             [{where, [{'or', []}]}]})),
-    ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, ["id", "username"], "users",
-                             [{where, [{'and', [{'and', []}, {'or', []}]}]}]})),
-    ok.
-
-empty_order_test() ->
-    ?assertEqual(<<"SELECT id, username FROM users">>,
-                 erma:build({select, ["id", "username"], "users",
-                             [{order, []}]})),
-    ok.
+empty_test_() ->
+    test_utils:generate(
+      [{
+         %%
+         {select, ["id", "username"], "users", [{where, []}]},
+         %%
+         <<"SELECT id, username FROM users">>
+       },
+       {
+         %%
+         {select, ["id", "username"], <<"users">>, [{where, [{'and', []}]}]},
+         %%
+         <<"SELECT id, username FROM users">>
+       },
+       {
+         %%
+         {select, ["id", "username"], users, [{where, [{'or', []}]}]},
+         %%
+         <<"SELECT id, username FROM users">>
+       },
+       {
+         %%
+         {select, ["id", "username"], "users", [{where, [{'and', [{'and', []}, {'or', []}]}]}]},
+         %%
+         <<"SELECT id, username FROM users">>
+       },
+       {
+         %%
+         {select, ["id", "username"], "users", [{order, []}]},
+         %%
+         <<"SELECT id, username FROM users">>
+       }]).
