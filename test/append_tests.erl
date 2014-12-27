@@ -89,3 +89,29 @@ append3_test() ->
                    "WHERE user_id = 10 AND (NOT blocked = true) AND posted > '2014-02-20'">>,
                  erma:build(Select2)),
     ok.
+
+
+append4_test() ->
+    Select0 = {select, ["id", "username"], <<"пользователь"/utf8>>,
+               [{where, [{"email", like, "*@gmail.com"}]}]},
+    ?assertEqual(<<"SELECT id, username ",
+                   "FROM `пользователь` "/utf8,
+                   "WHERE email LIKE '*@gmail.com'">>,
+                 erma:build(Select0)),
+
+    Select1 = erma:append(Select0, [{where, [{<<"активен"/utf8>>, true}, {<<"возраст"/utf8>>, '>', 18}]},
+                                    {order, [<<"дата_создания"/utf8>>]}]),
+    ?assertEqual(
+       {select, ["id", "username"], <<"пользователь"/utf8>>,
+        [{where, [{"email", like, "*@gmail.com"}, {<<"активен"/utf8>>, true}, {<<"возраст"/utf8>>, '>', 18}]},
+         {order, [<<"дата_создания"/utf8>>]}
+        ]},
+       Select1),
+    ?assertEqual(<<"SELECT id, username ",
+                   "FROM `пользователь` "/utf8,
+                   "WHERE email LIKE '*@gmail.com' ",
+                   "AND `активен` = true "/utf8,
+                   "AND `возраст` > 18 "/utf8,
+                   "ORDER BY `дата_создания` ASC"/utf8>>,
+                 erma:build(Select1)),
+    ok.
