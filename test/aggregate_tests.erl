@@ -13,15 +13,15 @@ aggregate_test_() ->
        },
        {
          %%
-         {select, ["id", {max, "age"}], "users", [{where, [{"id", '>', 3}]}]},
+         {select, ["id", {max, "age"}], "users", [{where, [{"id", '>', 3}]}, {group, ["id"]}]},
          %%
-         <<"SELECT id, MAX(age) FROM users WHERE id > 3">>
+         <<"SELECT id, MAX(age) FROM users WHERE id > 3 GROUP BY id">>
        },
        {
          %%
-         {select, ["id", {avg, "age"}, "age"], "users", [{where, [{"id", '>', 3}]}]},
+         {select, ["id", {avg, "age"}, "age"], "users", [{where, [{"id", '>', 3}]}, {group, ["id", "age"]}]},
          %%
-         <<"SELECT id, AVG(age), age FROM users WHERE id > 3">>
+         <<"SELECT id, AVG(age), age FROM users WHERE id > 3 GROUP BY id, age">>
        },
        {
          %%
@@ -31,9 +31,9 @@ aggregate_test_() ->
        },
        {
          %%
-         {select, [{max, "users.age"}, {avg, "users.height"}], "users",
-          [{where, [{"users.state", '<>', "blocked"}]}]},
+         {select, [{max, "users.age"}, {avg, "users.height"}, "level"], "users",
+          [{where, [{"users.state", '<>', "blocked"}]}, {group, [<<"level">>]}]},
          %%
-         <<"SELECT MAX(users.age), AVG(users.height) FROM users WHERE users.`state` <> 'blocked'">>
+         <<"SELECT MAX(users.age), AVG(users.height), `level` FROM users WHERE users.`state` <> 'blocked' GROUP BY `level`">>
        }
       ]).

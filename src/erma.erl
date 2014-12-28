@@ -28,6 +28,7 @@ build_select(Select, Fields, Table, Entities) ->
                                   prepare_table_name(Table),
                                   build_joins(Table, Entities),
                                   build_where(Entities),
+                                  build_group(Entities),
                                   build_order(Entities),
                                   build_limit(Entities)
                                  ]).
@@ -215,15 +216,25 @@ build_where_condition({Key, Value}) ->
     [prepare_name(Key), " = ", prepare_value(Value)].
 
 
+-spec build_group(list()) -> iolist().
+build_group(Entities) ->
+    case lists:keyfind(group, 1, Entities) of
+        false -> [];
+        {group, []} -> [];
+        {group, GEntities} ->
+            Names = lists:map(fun(Name) -> prepare_name(Name) end, GEntities),
+            [" GROUP BY ", string:join(Names, ", ")]
+    end.
+
+
 -spec build_order(list()) -> iolist().
 build_order(Entities) ->
     case lists:keyfind(order, 1, Entities) of
         false -> [];
         {order, []} -> [];
         {order, OEntities} ->
-            O1 = lists:map(fun(Entity) -> build_order_entity(Entity) end, OEntities),
-            O2 = string:join(O1, ", "),
-            [" ORDER BY ", O2]
+            O = lists:map(fun(Entity) -> build_order_entity(Entity) end, OEntities),
+            [" ORDER BY ", string:join(O, ", ")]
     end.
 
 

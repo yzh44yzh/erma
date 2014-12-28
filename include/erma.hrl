@@ -33,6 +33,8 @@
                            {'and', [where_condition()]} |
                            {'or', [where_condition()]}.
 
+-type group() :: {group, [name()]}.
+
 -type order() :: {order, [name() | {name(), asc} | {name(), desc}]}.
 
 -type limit() :: {limit, non_neg_integer()} | {offset, non_neg_integer(), limit, non_neg_integer()}.
@@ -40,7 +42,7 @@
 -type returning() :: {returning, id} | {returning, [name()]}.
 
 -type select_query() :: {select(), [field()], table_name()} |
-                        {select(), [field()], table_name(), [joins() | where() | order() | limit()]}.
+                        {select(), [field()], table_name(), [joins() | where() | group() | order() | limit()]}.
 
 -type insert_query() :: {insert, table_name(), [name()], [value()]} |
                         {insert, table_name(), [name()], [value()], [returning()]} |
