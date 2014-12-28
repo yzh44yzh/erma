@@ -35,5 +35,17 @@ aggregate_test_() ->
           [{where, [{"users.state", '<>', "blocked"}]}, {group, [<<"level">>]}]},
          %%
          <<"SELECT MAX(users.age), AVG(users.height), `level` FROM users WHERE users.`state` <> 'blocked' GROUP BY `level`">>
+       },
+       {
+         %%
+         {select, ["id", {max, "age"}], "users", [{where, [{"id", '>', 3}]}, {group, ["id"]}, {having, [{"id", lt, 10}]}]},
+         %%
+         <<"SELECT id, MAX(age) FROM users WHERE id > 3 GROUP BY id HAVING id < 10">>
+       },
+       {
+         %%
+         {select, ["id", {avg, "age"}, "age"], "users", [{where, [{"id", '>', 3}]}, {group, ["id", "age"]}, {having, [{"age", gt, 18}]}]},
+         %%
+         <<"SELECT id, AVG(age), age FROM users WHERE id > 3 GROUP BY id, age HAVING age > 18">>
        }
       ]).

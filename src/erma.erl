@@ -29,6 +29,7 @@ build_select(Select, Fields, Table, Entities) ->
                                   build_joins(Table, Entities),
                                   build_where(Entities),
                                   build_group(Entities),
+                                  build_having(Entities),
                                   build_order(Entities),
                                   build_limit(Entities)
                                  ]).
@@ -224,6 +225,21 @@ build_group(Entities) ->
         {group, GEntities} ->
             Names = lists:map(fun(Name) -> prepare_name(Name) end, GEntities),
             [" GROUP BY ", string:join(Names, ", ")]
+    end.
+
+
+-spec build_having(list()) -> iolist().
+build_having(Conditions) ->
+    case lists:keyfind(having, 1, Conditions) of
+        false -> [];
+        {having, []} -> [];
+        {having, HConditions} ->
+            H1 = lists:map(fun build_where_condition/1, HConditions),
+            case lists:flatten(H1) of
+                [] -> [];
+                _ -> H2 = string:join(H1, " AND "),
+                     [" HAVING ", H2]
+            end
     end.
 
 
