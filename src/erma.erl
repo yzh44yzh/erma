@@ -185,41 +185,52 @@ build_where_condition({'and', WConditions}) ->
         _ -> ["(", string:join(W, " AND "), ")"]
     end;
 build_where_condition({Key, '=', Value}) ->
-    [prepare_name(Key), " = ", prepare_value(Value)];
+    [prepare_name(Key), " = ", build_where_value(Value)];
 build_where_condition({Key, '<>', Value}) ->
-    [prepare_name(Key), " <> ", prepare_value(Value)];
+    [prepare_name(Key), " <> ", build_where_value(Value)];
 build_where_condition({Key, '>', Value}) ->
-    [prepare_name(Key), " > ", prepare_value(Value)];
+    [prepare_name(Key), " > ", build_where_value(Value)];
 build_where_condition({Key, gt, Value}) ->
-    [prepare_name(Key), " > ", prepare_value(Value)];
+    [prepare_name(Key), " > ", build_where_value(Value)];
 build_where_condition({Key, '<', Value}) ->
-    [prepare_name(Key), " < ", prepare_value(Value)];
+    [prepare_name(Key), " < ", build_where_value(Value)];
 build_where_condition({Key, lt, Value}) ->
-    [prepare_name(Key), " < ", prepare_value(Value)];
+    [prepare_name(Key), " < ", build_where_value(Value)];
 build_where_condition({Key, '>=', Value}) ->
-    [prepare_name(Key), " >= ", prepare_value(Value)];
+    [prepare_name(Key), " >= ", build_where_value(Value)];
 build_where_condition({Key, '<=', Value}) ->
-    [prepare_name(Key), " <= ", prepare_value(Value)];
+    [prepare_name(Key), " <= ", build_where_value(Value)];
 build_where_condition({Key, true}) ->
     [prepare_name(Key), " = true"];
 build_where_condition({Key, false}) ->
     [prepare_name(Key), " = false"];
 build_where_condition({Key, like, Value}) when is_list(Value) ->
-    [prepare_name(Key), " LIKE ", prepare_value(Value)];
+    [prepare_name(Key), " LIKE ", build_where_value(Value)];
 build_where_condition({Key, in, []}) ->
     [prepare_name(Key), " IN (NULL)"];
 build_where_condition({Key, in, Values}) when is_list(Values) ->
-    V = lists:map(fun erma_utils:prepare_value/1, Values),
+    V = lists:map(fun build_where_value/1, Values),
     [prepare_name(Key), " IN (", string:join(V, ", "), ")"];
+build_where_condition({Key, in, SubQuery}) when is_tuple(SubQuery) ->
+    [prepare_name(Key), " IN ", build_where_value(SubQuery)];
 build_where_condition({Key, not_in, []}) ->
     [prepare_name(Key), " NOT IN (NULL)"];
 build_where_condition({Key, not_in, Values}) when is_list(Values) ->
-    V = lists:map(fun erma_utils:prepare_value/1, Values),
+    V = lists:map(fun build_where_value/1, Values),
     [prepare_name(Key), " NOT IN (", string:join(V, ", "), ")"];
+build_where_condition({Key, not_in, SubQuery}) when is_tuple(SubQuery) ->
+    [prepare_name(Key), " NOT IN ", build_where_value(SubQuery)];
 build_where_condition({Key, between, Value1, Value2}) ->
-    [prepare_name(Key), " BETWEEN ", prepare_value(Value1), " AND ", prepare_value(Value2)];
+    [prepare_name(Key), " BETWEEN ", build_where_value(Value1), " AND ", build_where_value(Value2)];
 build_where_condition({Key, Value}) ->
-    [prepare_name(Key), " = ", prepare_value(Value)].
+    [prepare_name(Key), " = ", build_where_value(Value)].
+
+
+build_where_value({select, _, _} = Query) -> ["(", build(Query), ")"];
+build_where_value({select, _, _, _} = Query) -> ["(", build(Query), ")"];
+build_where_value({select_distinct, _, _} = Query) -> ["(", build(Query), ")"];
+build_where_value({select_distinct, _, _, _} = Query) -> ["(", build(Query), ")"];
+build_where_value(Value) -> prepare_value(Value).
 
 
 -spec build_group(list()) -> iolist().

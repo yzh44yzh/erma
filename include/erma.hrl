@@ -24,11 +24,13 @@
 
 -type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like.
 
--type where_condition() :: {name(), value()} |
-                           {name(), where_action(), value()} |
-                           {name(), in, [value()]} |
-                           {name(), not_in, [value()]} |
-                           {name(), between, value(), value()} |
+-type where_value() :: value() | select_query().
+
+-type where_condition() :: {name(), where_value()} |
+                           {name(), where_action(), where_value()} |
+                           {name(), in, [where_value()]} |
+                           {name(), not_in, [where_value()]} |
+                           {name(), between, where_value(), where_value()} |
                            {'not', where_condition()} |
                            {'and', [where_condition()]} |
                            {'or', [where_condition()]}.
