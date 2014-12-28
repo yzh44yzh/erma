@@ -143,5 +143,21 @@ select_test_() ->
           [{order, ["id", "created", {"last_login", asc}, {"username", desc}]}]},
          %%
          <<"SELECT id, username FROM `user` ORDER BY id ASC, created ASC, last_login ASC, username DESC">>
+       },
+       {
+         %%
+         {select, [{"id", as, "user_id"}, "username"], "user",
+          [{order, ["user_id", "created", {"last_login", asc}, {"username", desc}]}]},
+         %%
+         <<"SELECT id AS user_id, username FROM `user` ORDER BY user_id ASC, created ASC, last_login ASC, username DESC">>
+       },
+       {
+         %%
+         {select, [{<<"first_name">>, as, "fname"}, {"last_name", as, "lname"}, "address.state"], user,
+          [{where, [{"fname", '<>', <<"Bob">>}]}]},
+         %%
+         <<"SELECT first_name AS fname, last_name AS lname, address.`state` ",
+           "FROM `user` ",
+           "WHERE fname <> 'Bob'">>
        }
       ]).

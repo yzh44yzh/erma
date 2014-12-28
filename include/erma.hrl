@@ -11,7 +11,7 @@
 
 -type agg_fun() :: atom().
 
--type field() :: name() | {name(), as, name()} | {agg_fun(), name()}.
+-type field() :: name() | {name(), as, name()} | {agg_fun(), name()} | {agg_fun(), name(), as, name()}.
 
 -type joins() :: {joins, [join()]}.
 -type join() :: {join_type(), join_tables()} |

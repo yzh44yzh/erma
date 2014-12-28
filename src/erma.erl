@@ -90,7 +90,12 @@ append(Query, _NewEntities) -> Query.
 -spec build_fields([field()]) -> iolist().
 build_fields([]) -> "*";
 build_fields(Fields) ->
-    Fields2 = lists:map(fun({AggFun, Name}) ->
+    Fields2 = lists:map(fun({AggFun, Name, as, Alias}) ->
+                                [string:to_upper(atom_to_list(AggFun)),
+                                 "(", prepare_name(Name), ") AS ", prepare_name(Alias)];
+                           ({Name, as, Alias}) ->
+                                [prepare_name(Name), " AS ", prepare_name(Alias)];
+                           ({AggFun, Name}) ->
                                 [string:to_upper(atom_to_list(AggFun)),
                                  "(", prepare_name(Name), ")"];
                            (Name) ->
