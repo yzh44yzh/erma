@@ -95,6 +95,7 @@ build_fields(Fields) ->
                                  "(", prepare_name(Name), ") AS ", prepare_name(Alias)];
                            ({Name, as, Alias}) ->
                                 [prepare_name(Name), " AS ", prepare_name(Alias)];
+                           ({raw, Name}) -> Name;
                            ({AggFun, Name}) ->
                                 [string:to_upper(atom_to_list(AggFun)),
                                  "(", prepare_name(Name), ")"];

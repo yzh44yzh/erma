@@ -159,5 +159,23 @@ select_test_() ->
          <<"SELECT first_name AS fname, last_name AS lname, address.`state` ",
            "FROM `user` ",
            "WHERE fname <> 'Bob'">>
+       },
+       {
+         %%
+         {select, [{raw, "level"}, {raw, "address.state"}], user,
+          [{where, [{"fname", '<>', <<"Bob">>}]}]},
+         %%
+         <<"SELECT level, address.state ",
+           "FROM `user` ",
+           "WHERE fname <> 'Bob'">>
+       },
+       {
+         %%
+         {select, [{raw, "SUM(id)"}], user,
+          [{where, [{"fname", '<>', <<"Bob">>}]}]},
+         %%
+         <<"SELECT SUM(id) ",
+           "FROM `user` ",
+           "WHERE fname <> 'Bob'">>
        }
       ]).
