@@ -186,8 +186,3 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
 ```
 
 See [unit tests](test/) for more samples.
-
-## Not implemented yet
-
- - group by, having
- - subselect
