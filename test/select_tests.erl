@@ -13,7 +13,7 @@ select_test_() ->
            {offset, 3, limit, 5}]},
          %%
          <<"SELECT id, username FROM users WHERE username = 'chris' ",
-           "ORDER BY created ASC OFFSET 3, LIMIT 5">>
+           "ORDER BY created ASC OFFSET 3 LIMIT 5">>
        },
        {
          %%
@@ -65,7 +65,7 @@ select_test_() ->
            {order, ["created"]},
            {offset, 3, limit, 5}]},
          %%
-         <<"SELECT * FROM users WHERE active = true ORDER BY created ASC OFFSET 3, LIMIT 5">>
+         <<"SELECT * FROM users WHERE active = true ORDER BY created ASC OFFSET 3 LIMIT 5">>
        },
        {
          %%
@@ -108,13 +108,13 @@ select_test_() ->
          %%
          {select, ["id", "username"], "user", [{offset, 0, limit, 20}]},
          %%
-         <<"SELECT id, username FROM `user` OFFSET 0, LIMIT 20">>
+         <<"SELECT id, username FROM `user` OFFSET 0 LIMIT 20">>
        },
        {
          %%
          {select, ["id", "username"], "user", [{offset, 100, limit, 20}]},
          %%
-         <<"SELECT id, username FROM `user` OFFSET 100, LIMIT 20">>
+         <<"SELECT id, username FROM `user` OFFSET 100 LIMIT 20">>
        },
        {
          %%

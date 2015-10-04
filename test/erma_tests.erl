@@ -21,7 +21,7 @@ select_test() ->
     S3 = <<"SELECT id, username FROM users ",
            "WHERE username = 'chris' ",
            "ORDER BY created ASC ",
-           "OFFSET 3, LIMIT 5">>,
+           "OFFSET 3 LIMIT 5">>,
     ?assertEqual(S3, erma:build(Q3)),
     ok.
 

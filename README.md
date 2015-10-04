@@ -30,7 +30,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
     S3 = <<"SELECT id, username FROM users ",
            "WHERE username = 'chris' ",
            "ORDER BY created ASC ",
-           "OFFSET 3, LIMIT 5">>,
+           "OFFSET 3 LIMIT 5">>,
     ?assertEqual(S3, erma:build(Q3)),
 ```
 

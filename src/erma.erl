@@ -280,7 +280,7 @@ build_order_entity(Field) -> [prepare_name(Field), " ASC"].
 -spec build_limit(list()) -> iolist().
 build_limit(Entities) ->
     lists:filtermap(fun({limit, Num}) -> {true, [" LIMIT ", integer_to_list(Num)]};
-                       ({offset, N1, limit, N2}) -> {true, [" OFFSET ", integer_to_list(N1), ", LIMIT ", integer_to_list(N2)]};
+                       ({offset, N1, limit, N2}) -> {true, [" OFFSET ", integer_to_list(N1), " LIMIT ", integer_to_list(N2)]};
                        (_) -> false
                     end, Entities).
 
