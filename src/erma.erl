@@ -352,7 +352,6 @@ build_returning(Entities, Database) ->
 -spec merge(list(), list()) -> list().
 merge([], Acc) -> Acc;
 merge([{Tag, Props} | NewEntities], Acc) ->
-    io:format("merge ~p ~p~n", [Tag, Props]),
     case lists:keyfind(Tag, 1, Acc) of
         false -> merge(NewEntities, [{Tag, Props} | Acc]);
         {limit, _} ->
