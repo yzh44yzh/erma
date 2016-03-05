@@ -5,6 +5,7 @@
     prepare_table_name/2,
     prepare_name/2,
     prepare_value/1,
+    prepare_limit/1,
     format_date/1, format_time/1, format_datetime/1]).
 -include("erma.hrl").
 
@@ -76,6 +77,15 @@ prepare_value(Value) when is_integer(Value) -> integer_to_list(Value);
 prepare_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
 prepare_value(Value) when is_binary(Value) -> prepare_value(unicode:characters_to_list(Value));
 prepare_value(Value) when is_list(Value) -> ["'", Value, "'"].
+
+
+-spec prepare_limit(limit_value()) -> iolist().
+prepare_limit(Value) when is_integer(Value) ->
+    integer_to_list(Value);
+prepare_limit(Value) when is_binary(Value) ->
+    prepare_limit(binary_to_list(Value));
+prepare_limit("?") -> "?"; % mysql placeholder
+prepare_limit([$$ | Rest]) -> [$$ | Rest]. % postgresql placeholder
 
 
 -spec format_date(calendar:date()) -> string().

@@ -41,7 +41,9 @@
 
 -type having() :: {having, [where_condition()]}.
 
--type limit() :: {limit, non_neg_integer()} | {offset, non_neg_integer(), limit, non_neg_integer()}.
+-type limit_value() :: non_neg_integer() | binary() | string().
+
+-type limit() :: {limit, limit_value()} | {offset, limit_value(), limit, limit_value()}.
 
 -type returning() :: {returning, id} | {returning, [name()]}.
 

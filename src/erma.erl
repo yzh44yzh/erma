@@ -1,7 +1,7 @@
 -module(erma).
 
 -export([build/1, build/2, append/2]).
--import(erma_utils, [prepare_table_name/2, prepare_name/2, prepare_value/1]).
+-import(erma_utils, [prepare_table_name/2, prepare_name/2, prepare_value/1, prepare_limit/1]).
 -include("erma.hrl").
 
 
@@ -328,9 +328,9 @@ build_order_entity(Field, Database) -> [prepare_name(Field, Database), " ASC"].
 build_limit(Entities) ->
     lists:filtermap(
         fun({limit, Num}) ->
-                {true, [" LIMIT ", integer_to_list(Num)]};
+                {true, [" LIMIT ", prepare_limit(Num)]};
             ({offset, N1, limit, N2}) ->
-                {true, [" OFFSET ", integer_to_list(N1), " LIMIT ", integer_to_list(N2)]};
+                {true, [" OFFSET ", prepare_limit(N1), " LIMIT ", prepare_limit(N2)]};
             (_) -> false
         end, Entities).
 
