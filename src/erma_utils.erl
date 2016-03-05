@@ -2,8 +2,8 @@
 
 -export([
     valid_name/1,
-    prepare_table_name/1, prepare_table_name/2,
-    prepare_name/1, prepare_name/2,
+    prepare_table_name/2,
+    prepare_name/2,
     prepare_value/1,
     format_date/1, format_time/1, format_datetime/1]).
 -include("erma.hrl").
@@ -29,18 +29,10 @@ valid_name(Name0) ->
     end.
 
 
--spec prepare_table_name(table_name()) -> iolist().
-prepare_table_name(Name) -> prepare_table_name(Name, postgresql).
-
-
 -spec prepare_table_name(table_name(), database()) -> iolist().
 prepare_table_name({Name, as, Alias}, Database) ->
     [prepare_name(Name, Database), " AS ", prepare_name(Alias, Database)];
 prepare_table_name(Name, Database) -> prepare_name(Name, Database).
-
-
--spec prepare_name(name() | [name()]) -> iolist().
-prepare_name(Name) -> prepare_name(Name, postgresql).
 
 
 -spec prepare_name(name() | [name()], database()) -> iolist().

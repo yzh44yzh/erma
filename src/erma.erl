@@ -1,45 +1,69 @@
 -module(erma).
 
--export([build/1, append/2]).
--import(erma_utils, [prepare_table_name/1, prepare_name/1, prepare_value/1]).
+-export([build/1, build/2, append/2]).
+-import(erma_utils, [prepare_table_name/2, prepare_name/2, prepare_value/1]).
 -include("erma.hrl").
 
 
 %%% module API
 
 -spec build(sql_query()) -> sql().
-build({select, Fields, Table}) -> build_select("SELECT ", Fields, Table, []);
-build({select, Fields, Table, Entities}) -> build_select("SELECT ", Fields, Table, Entities);
-build({select_distinct, Fields, Table}) -> build_select("SELECT DISTINCT ", Fields, Table, []);
-build({select_distinct, Fields, Table, Entities}) -> build_select("SELECT DISTINCT ", Fields, Table, Entities);
-build({insert, Table, Names, Values}) -> build_insert(Table, Names, [Values], []);
-build({insert, Table, Names, Values, Entities}) -> build_insert(Table, Names, [Values], Entities);
-build({insert_rows, Table, Names, Rows}) -> build_insert(Table, Names, Rows, []);
-build({insert_rows, Table, Names, Rows, Entities}) -> build_insert(Table, Names, Rows, Entities);
-build({update, Table, KV}) -> build_update(Table, KV, []);
-build({update, Table, KV, Entities}) -> build_update(Table, KV, Entities);
-build({delete, Table}) -> build_delete(Table, []);
-build({delete, Table, Entities}) -> build_delete(Table, Entities).
+build(Query) -> build(Query, #{database => postgresql}).
 
 
--spec build_select(string(), [field()], table_name(), [joins() | where() | order() | limit()]) -> sql().
-build_select(Select, Fields, Table, Entities) ->
-    unicode:characters_to_binary([Select, build_fields(Fields), " FROM ",
-                                  prepare_table_name(Table),
-                                  build_joins(Table, Entities),
-                                  build_where(Entities),
-                                  build_group(Entities),
-                                  build_having(Entities),
-                                  build_order(Entities),
+-spec build(sql_query(), erma_options()) -> sql().
+build({select, Fields, Table}, Options) ->
+    build_select({select, Fields, Table, []}, Options);
+build({select, Fields, Table, Entities}, Options) ->
+    build_select({select, Fields, Table, Entities}, Options);
+build({select_distinct, Fields, Table}, Options) ->
+    build_select({select_distinct, Fields, Table, []}, Options);
+build({select_distinct, Fields, Table, Entities}, Options) ->
+    build_select({select_distinct, Fields, Table, Entities}, Options);
+build({insert, Table, Names, Values}, Options) ->
+    build_insert({Table, Names, [Values], []}, Options);
+build({insert, Table, Names, Values, Entities}, Options) ->
+    build_insert({Table, Names, [Values], Entities}, Options);
+build({insert_rows, Table, Names, Rows}, Options) ->
+    build_insert({Table, Names, Rows, []}, Options);
+build({insert_rows, Table, Names, Rows, Entities}, Options) ->
+    build_insert({Table, Names, Rows, Entities}, Options);
+build({update, Table, KV}, Options) ->
+    build_update({Table, KV, []}, Options);
+build({update, Table, KV, Entities}, Options) ->
+    build_update({Table, KV, Entities}, Options);
+build({delete, Table}, Options) ->
+    build_delete({Table, []}, Options);
+build({delete, Table, Entities}, Options) ->
+    build_delete({Table, Entities}, Options).
+
+
+-spec build_select(select_query(), erma_options()) -> sql().
+build_select({SelectType, Fields, Table, Entities}, #{database := Database}) ->
+    Select = case SelectType of
+                 select -> "SELECT ";
+                 select_distinct -> "SELECT DISTINCT "
+             end,
+    unicode:characters_to_binary([Select, build_fields(Fields, Database), " FROM ",
+                                  prepare_table_name(Table, Database),
+                                  build_joins(Table, Entities, Database),
+                                  build_where(Entities, Database),
+                                  build_group(Entities, Database),
+                                  build_having(Entities, Database),
+                                  build_order(Entities, Database),
                                   build_limit(Entities)
                                  ]).
 
 
--spec build_insert(table_name(), [name()], [[value()]], [returning()]) -> sql().
-build_insert(Table, Names, Rows, Entities) ->
+-spec build_insert(insert_query(), erma_options()) -> sql().
+build_insert({Table, Names, Rows, Entities}, #{database := Database}) ->
     Names2 = case Names of
                 [] -> [];
-                _ -> N1 = lists:map(fun erma_utils:prepare_name/1, Names),
+                _ ->
+                    N1 = lists:map(
+                        fun(Name) ->
+                            prepare_name(Name, Database)
+                        end, Names),
                      N2 = string:join(N1, ", "),
                      [" (", N2, ")"]
             end,
@@ -49,73 +73,85 @@ build_insert(Table, Names, Rows, Entities) ->
                         end, Rows),
     Rows3 = string:join(Rows2, ", "),
     unicode:characters_to_binary(["INSERT INTO ",
-                                  prepare_table_name(Table),
+                                  prepare_table_name(Table, Database),
                                   Names2, " VALUES ", Rows3,
-                                  build_returning(Entities)]).
+                                  build_returning(Entities, Database)]).
 
 
--spec build_update(table_name(), [{name(), value()}], [where() | returning()]) -> sql().
-build_update(Table, KV, Entities) ->
+-spec build_update(update_query(), erma_options()) -> sql().
+build_update({Table, KV, Entities}, #{database := Database}) ->
     Values = lists:map(fun({K, V}) ->
-                               [prepare_name(K), " = ", prepare_value(V)]
+                               [prepare_name(K, Database), " = ", prepare_value(V)]
                        end, KV),
     Values2 = string:join(Values, ", "),
-    unicode:characters_to_binary(["UPDATE ", prepare_table_name(Table),
+    unicode:characters_to_binary(["UPDATE ", prepare_table_name(Table, Database),
                                   " SET ", Values2,
-                                  build_where(Entities),
-                                  build_returning(Entities)]).
+                                  build_where(Entities, Database),
+                                  build_returning(Entities, Database)]).
 
 
--spec build_delete(table_name(), [where() | returning()]) -> sql().
-build_delete(Table, Entities) ->
-    unicode:characters_to_binary(["DELETE FROM ", prepare_table_name(Table),
-                                  build_where(Entities),
-                                  build_returning(Entities)]).
+-spec build_delete(delete_query(), erma_options()) -> sql().
+build_delete({Table, Entities}, #{database := Database}) ->
+    unicode:characters_to_binary(["DELETE FROM ", prepare_table_name(Table, Database),
+                                  build_where(Entities, Database),
+                                  build_returning(Entities, Database)]).
 
 
 -spec append(sql_query(), list()) -> sql_query().
-append({select, Fields, Table}, NewEntities) -> {select, Fields, Table, NewEntities};
-append({select, Fields, Table, Entities}, NewEntities) -> {select, Fields, Table, merge(Entities, NewEntities)};
-append({select_distinct, Fields, Table}, NewEntities) -> {select_distinct, Fields, Table, NewEntities};
-append({select_distinct, Fields, Table, Entities}, NewEntities) -> {select_distinct, Fields, Table, merge(Entities, NewEntities)};
-append({update, Table, KV}, NewEntities) -> {update, Table, KV, NewEntities};
-append({update, Table, KV, Entities}, NewEntities) -> {update, Table, KV, merge(Entities, NewEntities)};
-append({delete, Table}, NewEntities) -> {delete, Table, NewEntities};
-append({delete, Table, Entities}, NewEntities) -> {delete, Table, merge(Entities, NewEntities)};
+append({select, Fields, Table}, NewEntities) ->
+    {select, Fields, Table, NewEntities};
+append({select, Fields, Table, Entities}, NewEntities) ->
+    {select, Fields, Table, merge(Entities, NewEntities)};
+append({select_distinct, Fields, Table}, NewEntities) ->
+    {select_distinct, Fields, Table, NewEntities};
+append({select_distinct, Fields, Table, Entities}, NewEntities) ->
+    {select_distinct, Fields, Table, merge(Entities, NewEntities)};
+append({update, Table, KV}, NewEntities) ->
+    {update, Table, KV, NewEntities};
+append({update, Table, KV, Entities}, NewEntities) ->
+    {update, Table, KV, merge(Entities, NewEntities)};
+append({delete, Table}, NewEntities) ->
+    {delete, Table, NewEntities};
+append({delete, Table, Entities}, NewEntities) ->
+    {delete, Table, merge(Entities, NewEntities)};
 append(Query, _NewEntities) -> Query.
 
 
 %%% inner functions
 
--spec build_fields([field()]) -> iolist().
-build_fields([]) -> "*";
-build_fields(Fields) ->
+-spec build_fields([field()], database()) -> iolist().
+build_fields([], _) -> "*";
+build_fields(Fields, Database) ->
     Fields2 = lists:map(fun({AggFun, Name, as, Alias}) ->
                                 [string:to_upper(atom_to_list(AggFun)),
-                                 "(", prepare_name(Name), ") AS ", prepare_name(Alias)];
+                                 "(", prepare_name(Name, Database), ") AS ", prepare_name(Alias, Database)];
                            ({Name, as, Alias}) ->
-                                [prepare_name(Name), " AS ", prepare_name(Alias)];
+                                [prepare_name(Name, Database), " AS ", prepare_name(Alias, Database)];
                            ({raw, Name}) -> Name;
                            ({AggFun, Name}) ->
                                 [string:to_upper(atom_to_list(AggFun)),
-                                 "(", prepare_name(Name), ")"];
+                                 "(", prepare_name(Name, Database), ")"];
                            (Name) ->
-                                prepare_name(Name)
+                                prepare_name(Name, Database)
                         end, Fields),
     string:join(Fields2, ", ").
 
 
--spec build_joins(table_name(), list()) -> iolist().
-build_joins(MainTable, Entities) ->
+-spec build_joins(table_name(), list(), database()) -> iolist().
+build_joins(MainTable, Entities, Database) ->
     case lists:keyfind(joins, 1, Entities) of
         false -> [];
         {joins, []} -> [];
         {joins, JEntities} ->
             Joins = lists:map(
-                      fun({JoinType, {JoinTable, ToTable}}) -> build_join_entity(JoinType, JoinTable, ToTable, []);
-                         ({JoinType, {JoinTable, ToTable}, Props}) -> build_join_entity(JoinType, JoinTable, ToTable, Props);
-                         ({JoinType, JoinTable}) -> build_join_entity(JoinType, JoinTable, MainTable, []);
-                         ({JoinType, JoinTable, Props}) -> build_join_entity(JoinType, JoinTable, MainTable, Props)
+                      fun({JoinType, {JoinTable, ToTable}}) ->
+                             build_join_entity(JoinType, JoinTable, ToTable, [], Database);
+                         ({JoinType, {JoinTable, ToTable}, Props}) ->
+                             build_join_entity(JoinType, JoinTable, ToTable, Props, Database);
+                         ({JoinType, JoinTable}) ->
+                             build_join_entity(JoinType, JoinTable, MainTable, [], Database);
+                         ({JoinType, JoinTable, Props}) ->
+                             build_join_entity(JoinType, JoinTable, MainTable, Props, Database)
                       end, JEntities),
             case lists:flatten(Joins) of
                 [] -> [];
@@ -124,43 +160,46 @@ build_joins(MainTable, Entities) ->
     end.
 
 
--spec build_join_entity(join_type(), table_name(), table_name(), [join_prop()]) -> iolist().
-build_join_entity(JoinType, JoinTable, ToTable, JoinProps) ->
+-spec build_join_entity(join_type(), table_name(), table_name(), [join_prop()], database()) -> iolist().
+build_join_entity(JoinType, JoinTable, ToTable, JoinProps, Database) ->
     Join = case JoinType of
                inner -> "INNER JOIN ";
                left -> "LEFT JOIN ";
                right -> "RIGHT JOIN ";
                full -> "FULL JOIN "
            end,
-    Table = prepare_table_name(JoinTable),
+    Table = prepare_table_name(JoinTable, Database),
     ToAlias = case ToTable of
-                  {_, as, Alias2} -> prepare_name(Alias2);
-                  Name2 -> prepare_name(Name2)
+                  {_, as, Alias2} -> prepare_name(Alias2, Database);
+                  Name2 -> prepare_name(Name2, Database)
               end,
     {JoinName, JoinAlias} =
         case JoinTable of
-            {Name3, as, Alias3} -> {Name3, prepare_name(Alias3)};
-            Name4 -> {Name4, prepare_name(Name4)}
+            {Name3, as, Alias3} -> {Name3, prepare_name(Alias3, Database)};
+            Name4 -> {Name4, prepare_name(Name4, Database)}
         end,
     PrimaryKey = case lists:keyfind(pk, 1, JoinProps) of
                      false -> "id";
-                     {pk, Pk} -> prepare_name(Pk)
+                     {pk, Pk} -> prepare_name(Pk, Database)
                  end,
     ForeignKey = case lists:keyfind(fk, 1, JoinProps) of
-                     false -> prepare_name([JoinName, "_id"]);
-                     {fk, Fk} -> prepare_name(Fk)
+                     false -> prepare_name([JoinName, "_id"], Database);
+                     {fk, Fk} -> prepare_name(Fk, Database)
                  end,
     io:format("ToAlias:~p, JoinName:~p, ForeignKey:~p~n", [ToAlias, JoinName, ForeignKey]),
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
 
 
--spec build_where(list()) -> iolist().
-build_where(Conditions) ->
+-spec build_where(list(), database()) -> iolist().
+build_where(Conditions, Database) ->
     case lists:keyfind(where, 1, Conditions) of
         false -> [];
         {where, []} -> [];
         {where, WConditions} ->
-            W1 = lists:map(fun build_where_condition/1, WConditions),
+            W1 = lists:map(
+                fun(WC) ->
+                    build_where_condition(WC, Database)
+                end, WConditions),
             case lists:flatten(W1) of
                 [] -> [];
                 _ -> W2 = string:join(W1, " AND "),
@@ -168,63 +207,69 @@ build_where(Conditions) ->
             end
     end.
 
--spec build_where_condition(where_condition()) -> iolist().
-build_where_condition({'not', WEntity}) ->
-    ["(NOT ", build_where_condition(WEntity), ")"];
-build_where_condition({'or', []}) -> [];
-build_where_condition({'or', WConditions}) ->
-    W = lists:map(fun build_where_condition/1, WConditions),
+-spec build_where_condition(where_condition(), database()) -> iolist().
+build_where_condition({'not', WEntity}, Database) ->
+    ["(NOT ", build_where_condition(WEntity, Database), ")"];
+build_where_condition({'or', []}, _) -> [];
+build_where_condition({'or', WConditions}, Database) ->
+    W = lists:map(
+        fun(WC) ->
+            build_where_condition(WC, Database)
+        end, WConditions),
     case W of
         [] -> [];
         _ -> ["(", string:join(W, " OR "), ")"]
     end;
-build_where_condition({'and', []}) -> [];
-build_where_condition({'and', WConditions}) ->
-    W = lists:map(fun build_where_condition/1, WConditions),
+build_where_condition({'and', []}, _) -> [];
+build_where_condition({'and', WConditions}, Database) ->
+    W = lists:map(
+        fun(WC) ->
+            build_where_condition(WC, Database)
+        end, WConditions),
     case lists:flatten(W) of
         [] -> [];
         _ -> ["(", string:join(W, " AND "), ")"]
     end;
-build_where_condition({Key, '=', Value}) ->
-    [prepare_name(Key), " = ", build_where_value(Value)];
-build_where_condition({Key, '<>', Value}) ->
-    [prepare_name(Key), " <> ", build_where_value(Value)];
-build_where_condition({Key, '>', Value}) ->
-    [prepare_name(Key), " > ", build_where_value(Value)];
-build_where_condition({Key, gt, Value}) ->
-    [prepare_name(Key), " > ", build_where_value(Value)];
-build_where_condition({Key, '<', Value}) ->
-    [prepare_name(Key), " < ", build_where_value(Value)];
-build_where_condition({Key, lt, Value}) ->
-    [prepare_name(Key), " < ", build_where_value(Value)];
-build_where_condition({Key, '>=', Value}) ->
-    [prepare_name(Key), " >= ", build_where_value(Value)];
-build_where_condition({Key, '<=', Value}) ->
-    [prepare_name(Key), " <= ", build_where_value(Value)];
-build_where_condition({Key, true}) ->
-    [prepare_name(Key), " = true"];
-build_where_condition({Key, false}) ->
-    [prepare_name(Key), " = false"];
-build_where_condition({Key, like, Value}) when is_list(Value) ->
-    [prepare_name(Key), " LIKE ", build_where_value(Value)];
-build_where_condition({Key, in, []}) ->
-    [prepare_name(Key), " IN (NULL)"];
-build_where_condition({Key, in, Values}) when is_list(Values) ->
+build_where_condition({Key, '=', Value}, Database) ->
+    [prepare_name(Key, Database), " = ", build_where_value(Value)];
+build_where_condition({Key, '<>', Value}, Database) ->
+    [prepare_name(Key, Database), " <> ", build_where_value(Value)];
+build_where_condition({Key, '>', Value}, Database) ->
+    [prepare_name(Key, Database), " > ", build_where_value(Value)];
+build_where_condition({Key, gt, Value}, Database) ->
+    [prepare_name(Key, Database), " > ", build_where_value(Value)];
+build_where_condition({Key, '<', Value}, Database) ->
+    [prepare_name(Key, Database), " < ", build_where_value(Value)];
+build_where_condition({Key, lt, Value}, Database) ->
+    [prepare_name(Key, Database), " < ", build_where_value(Value)];
+build_where_condition({Key, '>=', Value}, Database) ->
+    [prepare_name(Key, Database), " >= ", build_where_value(Value)];
+build_where_condition({Key, '<=', Value}, Database) ->
+    [prepare_name(Key, Database), " <= ", build_where_value(Value)];
+build_where_condition({Key, true}, Database) ->
+    [prepare_name(Key, Database), " = true"];
+build_where_condition({Key, false}, Database) ->
+    [prepare_name(Key, Database), " = false"];
+build_where_condition({Key, like, Value}, Database) when is_list(Value) ->
+    [prepare_name(Key, Database), " LIKE ", build_where_value(Value)];
+build_where_condition({Key, in, []}, Database) ->
+    [prepare_name(Key, Database), " IN (NULL)"];
+build_where_condition({Key, in, Values}, Database) when is_list(Values) ->
     V = lists:map(fun build_where_value/1, Values),
-    [prepare_name(Key), " IN (", string:join(V, ", "), ")"];
-build_where_condition({Key, in, SubQuery}) when is_tuple(SubQuery) ->
-    [prepare_name(Key), " IN ", build_where_value(SubQuery)];
-build_where_condition({Key, not_in, []}) ->
-    [prepare_name(Key), " NOT IN (NULL)"];
-build_where_condition({Key, not_in, Values}) when is_list(Values) ->
+    [prepare_name(Key, Database), " IN (", string:join(V, ", "), ")"];
+build_where_condition({Key, in, SubQuery}, Database) when is_tuple(SubQuery) ->
+    [prepare_name(Key, Database), " IN ", build_where_value(SubQuery)];
+build_where_condition({Key, not_in, []}, Database) ->
+    [prepare_name(Key, Database), " NOT IN (NULL)"];
+build_where_condition({Key, not_in, Values}, Database) when is_list(Values) ->
     V = lists:map(fun build_where_value/1, Values),
-    [prepare_name(Key), " NOT IN (", string:join(V, ", "), ")"];
-build_where_condition({Key, not_in, SubQuery}) when is_tuple(SubQuery) ->
-    [prepare_name(Key), " NOT IN ", build_where_value(SubQuery)];
-build_where_condition({Key, between, Value1, Value2}) ->
-    [prepare_name(Key), " BETWEEN ", build_where_value(Value1), " AND ", build_where_value(Value2)];
-build_where_condition({Key, Value}) ->
-    [prepare_name(Key), " = ", build_where_value(Value)].
+    [prepare_name(Key, Database), " NOT IN (", string:join(V, ", "), ")"];
+build_where_condition({Key, not_in, SubQuery}, Database) when is_tuple(SubQuery) ->
+    [prepare_name(Key, Database), " NOT IN ", build_where_value(SubQuery)];
+build_where_condition({Key, between, Value1, Value2}, Database) ->
+    [prepare_name(Key, Database), " BETWEEN ", build_where_value(Value1), " AND ", build_where_value(Value2)];
+build_where_condition({Key, Value}, Database) ->
+    [prepare_name(Key, Database), " = ", build_where_value(Value)].
 
 
 build_where_value({select, _, _} = Query) -> ["(", build(Query), ")"];
@@ -234,24 +279,27 @@ build_where_value({select_distinct, _, _, _} = Query) -> ["(", build(Query), ")"
 build_where_value(Value) -> prepare_value(Value).
 
 
--spec build_group(list()) -> iolist().
-build_group(Entities) ->
+-spec build_group(list(), database()) -> iolist().
+build_group(Entities, Database) ->
     case lists:keyfind(group, 1, Entities) of
         false -> [];
         {group, []} -> [];
         {group, GEntities} ->
-            Names = lists:map(fun(Name) -> prepare_name(Name) end, GEntities),
+            Names = lists:map(fun(Name) -> prepare_name(Name, Database) end, GEntities),
             [" GROUP BY ", string:join(Names, ", ")]
     end.
 
 
--spec build_having(list()) -> iolist().
-build_having(Conditions) ->
+-spec build_having(list(), database()) -> iolist().
+build_having(Conditions, Database) ->
     case lists:keyfind(having, 1, Conditions) of
         false -> [];
         {having, []} -> [];
         {having, HConditions} ->
-            H1 = lists:map(fun build_where_condition/1, HConditions),
+            H1 = lists:map(
+                fun(HC) ->
+                    build_where_condition(HC, Database)
+                end, HConditions),
             case lists:flatten(H1) of
                 [] -> [];
                 _ -> H2 = string:join(H1, " AND "),
@@ -260,38 +308,44 @@ build_having(Conditions) ->
     end.
 
 
--spec build_order(list()) -> iolist().
-build_order(Entities) ->
+-spec build_order(list(), database()) -> iolist().
+build_order(Entities, Database) ->
     case lists:keyfind(order, 1, Entities) of
         false -> [];
         {order, []} -> [];
         {order, OEntities} ->
-            O = lists:map(fun(Entity) -> build_order_entity(Entity) end, OEntities),
+            O = lists:map(fun(Entity) -> build_order_entity(Entity, Database) end, OEntities),
             [" ORDER BY ", string:join(O, ", ")]
     end.
 
 
--spec build_order_entity(name() | {name(), atom()}) -> iolist().
-build_order_entity({Field, asc}) -> [prepare_name(Field), " ASC"];
-build_order_entity({Field, desc}) -> [prepare_name(Field), " DESC"];
-build_order_entity(Field) -> [prepare_name(Field), " ASC"].
+-spec build_order_entity(name() | {name(), atom()}, database()) -> iolist().
+build_order_entity({Field, asc}, Database) -> [prepare_name(Field, Database), " ASC"];
+build_order_entity({Field, desc}, Database) -> [prepare_name(Field, Database), " DESC"];
+build_order_entity(Field, Database) -> [prepare_name(Field, Database), " ASC"].
 
 
 -spec build_limit(list()) -> iolist().
 build_limit(Entities) ->
-    lists:filtermap(fun({limit, Num}) -> {true, [" LIMIT ", integer_to_list(Num)]};
-                       ({offset, N1, limit, N2}) -> {true, [" OFFSET ", integer_to_list(N1), " LIMIT ", integer_to_list(N2)]};
-                       (_) -> false
-                    end, Entities).
+    lists:filtermap(
+        fun({limit, Num}) ->
+                {true, [" LIMIT ", integer_to_list(Num)]};
+            ({offset, N1, limit, N2}) ->
+                {true, [" OFFSET ", integer_to_list(N1), " LIMIT ", integer_to_list(N2)]};
+            (_) -> false
+        end, Entities).
 
 
--spec build_returning(list()) -> iolist().
-build_returning(Entities) ->
+-spec build_returning(list(), database()) -> iolist().
+build_returning(Entities, Database) ->
     case lists:keyfind(returning, 1, Entities) of
         false -> [];
         {returning, id} -> " RETURNING id";
         {returning, Names} ->
-            Names2 = lists:map(fun erma_utils:prepare_name/1, Names),
+            Names2 = lists:map(
+                fun(Name) ->
+                    prepare_name(Name, Database)
+                end, Names),
             [" RETURNING ", string:join(Names2, ", ")]
     end.
 

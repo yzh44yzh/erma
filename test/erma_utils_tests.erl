@@ -27,63 +27,56 @@ valid_name_test() ->
 
 prepare_name_test() ->
     lists:foreach(
-        fun({Name, Wait}) ->
-            ?assertEqual(Wait, erma_utils:prepare_name(Name))
-        end,
-        [
-            {user,               "\"user\""},
-            {"user",             "\"user\""},
-            {<<"user">>,         "\"user\""},
-            {["us", "er"],       "\"user\""},
-            {"like",             "\"like\""},
-            {"some_user",        "some_user"},
-            {["some", "_user"],  "some_user"},
-            {"_some_other_user", "_some_other_user"},
-            {"users.id",         "users.id"},
-            {"users.*",          "users.*"},
-            {"user.id",          "\"user\".id"},
-            {"user.*",           "\"user\".*"},
-            {"user.where",       "\"user\".\"where\""},
-            {"my_user.where",    "my_user.\"where\""},
-            {["my_user", ".", "where"], "my_user.\"where\""}
-        ]),
-    lists:foreach(
         fun({Name, Database, Wait}) ->
             ?assertEqual(Wait, erma_utils:prepare_name(Name, Database))
         end,
         [
-            {<<"user">>,      postgresql, "\"user\""},
-            {"like",          postgresql, "\"like\""},
-            {"user.id",       postgresql, "\"user\".id"},
-            {"user.*",        postgresql, "\"user\".*"},
-            {"my_user.where", postgresql, "my_user.\"where\""},
-            {<<"user">>,      mysql, "`user`"},
-            {"like",          mysql, "`like`"},
-            {"user.id",       mysql, "`user`.id"},
-            {"user.*",        mysql, "`user`.*"},
-            {"my_user.where", mysql, "my_user.`where`"}
+            {user,               postgresql, "\"user\""},
+            {"user",             postgresql, "\"user\""},
+            {<<"user">>,         postgresql, "\"user\""},
+            {["us", "er"],       postgresql, "\"user\""},
+            {"like",             postgresql, "\"like\""},
+            {"some_user",        postgresql, "some_user"},
+            {["some", "_user"],  postgresql, "some_user"},
+            {"_some_other_user", postgresql, "_some_other_user"},
+            {"users.id",         postgresql, "users.id"},
+            {"users.*",          postgresql, "users.*"},
+            {"user.id",          postgresql, "\"user\".id"},
+            {"user.*",           postgresql, "\"user\".*"},
+            {"user.where",       postgresql, "\"user\".\"where\""},
+            {"my_user.where",    postgresql, "my_user.\"where\""},
+            {["my_user", ".", "where"], postgresql, "my_user.\"where\""},
+            {user,               mysql, "`user`"},
+            {"user",             mysql, "`user`"},
+            {<<"user">>,         mysql, "`user`"},
+            {["us", "er"],       mysql, "`user`"},
+            {"like",             mysql, "`like`"},
+            {"some_user",        mysql, "some_user"},
+            {["some", "_user"],  mysql, "some_user"},
+            {"_some_other_user", mysql, "_some_other_user"},
+            {"users.id",         mysql, "users.id"},
+            {"users.*",          mysql, "users.*"},
+            {"user.id",          mysql, "`user`.id"},
+            {"user.*",           mysql, "`user`.*"},
+            {"user.where",       mysql, "`user`.`where`"},
+            {"my_user.where",    mysql, "my_user.`where`"},
+            {["my_user", ".", "where"], mysql, "my_user.`where`"}
         ]),
     ok.
 
 prepare_table_name_test() ->
     lists:foreach(
-        fun({Name, Wait}) ->
-                ?assertEqual(Wait, erma_utils:prepare_table_name(Name));
-            ({Name, Database, Wait}) ->
-                ?assertEqual(Wait, erma_utils:prepare_table_name(Name, Database))
+        fun({Name, Database, Wait}) ->
+            ?assertEqual(Wait, erma_utils:prepare_table_name(Name, Database))
         end,
         [
-            {<<"smth">>,           "smth"},
-            {<<"user">>,           "\"user\""},
-            {{"user", as, "u"},    ["\"user\"", " AS ", "u"]},
-            {{"smth", as, "user"}, ["smth",     " AS ", "\"user\""]},
-            {{"user", as, "like"}, ["\"user\"", " AS ", "\"like\""]},
-            {{"smth", as, "s"},    ["smth",     " AS ", "s"]},
+            {<<"smth">>,           postgresql, "smth"},
             {<<"user">>,           postgresql, "\"user\""},
             {{"user", as, "u"},    postgresql, ["\"user\"", " AS ", "u"]},
             {{"smth", as, "user"}, postgresql, ["smth",     " AS ", "\"user\""]},
             {{"user", as, "like"}, postgresql, ["\"user\"", " AS ", "\"like\""]},
             {{"smth", as, "s"},    postgresql, ["smth",     " AS ", "s"]},
+            {<<"smth">>,           mysql, "smth"},
             {<<"user">>,           mysql, "`user`"},
             {{"user", as, "u"},    mysql, ["`user`",   " AS ", "u"]},
             {{"smth", as, "user"}, mysql, ["smth",     " AS ", "`user`"]},

@@ -65,3 +65,5 @@
 -type sql() :: binary().
 
 -type database() :: postgresql | mysql.
+
+-type erma_options() :: #{database => database()}.

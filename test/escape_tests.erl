@@ -156,3 +156,36 @@ empty_test_() ->
          <<"DELETE FROM \"my-posts\" WHERE \"my-posts\".\"time\" > '22:30:00'">>
        }
       ]).
+
+
+escape_with_options_test() ->
+    PO = #{database => postgresql},
+    MO = #{database => mysql},
+
+    Q1 = {select, ["user.id", "user.first_name", "user.last_name", "user.age"], "user"},
+    P1 = <<"SELECT \"user\".id, \"user\".first_name, \"user\".last_name, \"user\".age FROM \"user\"">>,
+    M1 = <<"SELECT `user`.id, `user`.first_name, `user`.last_name, `user`.age FROM `user`">>,
+    ?assertEqual(P1, erma:build(Q1, PO)),
+    ?assertEqual(M1, erma:build(Q1, MO)),
+
+    Q2 = {select, ["scope.id", "a.state"], {"state", as, "scope"},
+        [{joins, [{left, {"result", as, "a"}}]}]},
+    P2 = <<"SELECT \"scope\".id, \"a\".\"state\" ",
+        "FROM \"state\" AS \"scope\" ",
+        "LEFT JOIN \"result\" AS \"a\" ON \"a\".id = \"scope\".result_id">>,
+    M2 = <<"SELECT `scope`.id, `a`.`state` ",
+        "FROM `state` AS `scope` ",
+        "LEFT JOIN `result` AS `a` ON `a`.id = `scope`.result_id">>,
+    ?assertEqual(P2, erma:build(Q2, PO)),
+    ?assertEqual(M2, erma:build(Q2, MO)),
+
+    Q3 = {select, [], "post",
+        [{where, [{'and', [{"user", 5},
+            {"status", "active"}]}]}
+        ]},
+    P3 = <<"SELECT * FROM post WHERE (\"user\" = 5 AND \"status\" = 'active')">>,
+    M3 = <<"SELECT * FROM post WHERE (`user` = 5 AND `status` = 'active')">>,
+    ?assertEqual(P3, erma:build(Q3, PO)),
+    ?assertEqual(M3, erma:build(Q3, MO)),
+    ok.
+
