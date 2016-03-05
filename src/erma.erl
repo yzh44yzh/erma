@@ -351,13 +351,19 @@ build_returning(Entities, Database) ->
 
 -spec merge(list(), list()) -> list().
 merge([], Acc) -> Acc;
+merge([{limit, Limit} | NewEntities], Acc) ->
+    merge(NewEntities, [{limit, Limit} | delete_limit(Acc)]);
+merge([{offset, Offset, limit, Limit} | NewEntities], Acc) ->
+    merge(NewEntities, [{offset, Offset, limit, Limit} | delete_limit(Acc)]);
 merge([{Tag, Props} | NewEntities], Acc) ->
     case lists:keyfind(Tag, 1, Acc) of
         false -> merge(NewEntities, [{Tag, Props} | Acc]);
-        {limit, _} ->
-            Acc2 = [{limit, Props} | lists:keydelete(Tag, 1, Acc)],
-            merge(NewEntities, Acc2);
         {Tag, OldProps} ->
             Acc2 = [{Tag, OldProps ++ Props} | lists:keydelete(Tag, 1, Acc)],
             merge(NewEntities, Acc2)
     end.
+
+
+-spec delete_limit(list()) -> list().
+delete_limit(Entities) ->
+    lists:keydelete(limit, 1, lists:keydelete(offset, 1, Entities)).

@@ -183,3 +183,20 @@ append6_test() ->
     Res = erma:append({select, [], "tab"}, [{order, ["id"]}, {where, [{"col", "$1"}]}, {where, [{"col2", "$2"}]}]),
     ?assertEqual({select,[],"tab", [{where,[{"col","$1"}, {"col2","$2"}]}, {order,["id"]}]}, Res),
     ok.
+
+
+append7_test() ->
+    Q = {select, [id], users, [{limit, 10}, {offset, 5, limit, 10}]},
+    Entities = [
+        {limit, 20},
+        {offset, 20, limit, 40},
+        {limit, 30},
+        {offset, 50, limit, 100}
+    ],
+
+    Res = erma:append(Q, Entities),
+    ?assertEqual({select, [id], users, [{offset, 50, limit, 100}]}, Res),
+
+    SQL = <<"SELECT id FROM users OFFSET 50 LIMIT 100">>,
+    ?assertEqual(SQL, erma:build(Res)),
+    ok.
