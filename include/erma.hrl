@@ -63,3 +63,5 @@
 -type sql_query() :: select_query() | insert_query() | update_query() | delete_query().
 
 -type sql() :: binary().
+
+-type database() :: postgresql | mysql.

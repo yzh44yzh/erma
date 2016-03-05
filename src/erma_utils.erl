@@ -1,7 +1,11 @@
 -module(erma_utils).
 
--export([valid_name/1, prepare_table_name/1, prepare_name/1, prepare_value/1,
-         format_date/1, format_time/1, format_datetime/1]).
+-export([
+    valid_name/1,
+    prepare_table_name/1, prepare_table_name/2,
+    prepare_name/1, prepare_name/2,
+    prepare_value/1,
+    format_date/1, format_time/1, format_datetime/1]).
 -include("erma.hrl").
 
 
@@ -26,28 +30,44 @@ valid_name(Name0) ->
 
 
 -spec prepare_table_name(table_name()) -> iolist().
-prepare_table_name({Name, as, Alias}) ->
-    [prepare_name(Name), " AS ", prepare_name(Alias)];
-prepare_table_name(Name) -> prepare_name(Name).
+prepare_table_name(Name) -> prepare_table_name(Name, postgresql).
+
+
+-spec prepare_table_name(table_name(), database()) -> iolist().
+prepare_table_name({Name, as, Alias}, Database) ->
+    [prepare_name(Name, Database), " AS ", prepare_name(Alias, Database)];
+prepare_table_name(Name, Database) -> prepare_name(Name, Database).
 
 
 -spec prepare_name(name() | [name()]) -> iolist().
-prepare_name(Name) when is_atom(Name) -> prepare_name(atom_to_list(Name));
-prepare_name(Name) when is_binary(Name) -> prepare_name(unicode:characters_to_list(Name));
-prepare_name(Name0) ->
+prepare_name(Name) -> prepare_name(Name, postgresql).
+
+
+-spec prepare_name(name() | [name()], database()) -> iolist().
+prepare_name(Name, Database) when is_atom(Name) -> prepare_name(atom_to_list(Name), Database);
+prepare_name(Name, Database) when is_binary(Name) -> prepare_name(unicode:characters_to_list(Name), Database);
+prepare_name(Name0, Database) ->
     Name = unicode:characters_to_list(
-             lists:map(fun(Part) when is_atom(Part) -> atom_to_list(Part);
-                          (Any) -> Any
-                       end, Name0)),
+        lists:map(
+            fun(Part) when is_atom(Part) -> atom_to_list(Part);
+                (Any) -> Any
+            end, Name0)),
     lists:flatten(
-      case string:tokens(Name, ".") of
-          [N1, "*"] -> [prepare_name(N1), ".*"];
-          [N1, N2] -> [prepare_name(N1), ".", prepare_name(N2)];
-          _ -> case valid_name(Name) of
-                   true -> Name;
-                   false -> ["\"", Name, "\""] % TODO double quote for postgresql, backtick for mysql
-               end
-      end).
+        case string:tokens(Name, ".") of
+            [N1, "*"] -> [prepare_name(N1, Database), ".*"];
+            [N1, N2] -> [prepare_name(N1, Database), ".", prepare_name(N2, Database)];
+            _ -> case valid_name(Name) of
+                     true -> Name;
+                     false ->
+                         EscapeChar = escape_char(Database),
+                         [EscapeChar, Name, EscapeChar]
+                 end
+        end).
+
+
+-spec escape_char(database()) -> iolist().
+escape_char(postgresql) -> "\"";
+escape_char(mysql) -> "`".
 
 
 -spec prepare_value(value()) -> iolist().

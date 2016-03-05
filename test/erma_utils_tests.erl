@@ -37,6 +37,49 @@ prepare_name_test() ->
     ?assertEqual("my_user.\"where\"", erma_utils:prepare_name(["my_user", ".", "where"])),
     ok.
 
+prepare_name_postgresql_test() ->
+    ?assertEqual("\"user\"", erma_utils:prepare_name(<<"user">>, postgresql)),
+    ?assertEqual("\"like\"", erma_utils:prepare_name("like", postgresql)),
+    ?assertEqual("\"user\".id", erma_utils:prepare_name("user.id", postgresql)),
+    ?assertEqual("\"user\".*", erma_utils:prepare_name("user.*", postgresql)),
+    ?assertEqual("my_user.\"where\"", erma_utils:prepare_name("my_user.where", postgresql)),
+    ok.
+
+prepare_name_mysql_test() ->
+    ?assertEqual("`user`", erma_utils:prepare_name(<<"user">>, mysql)),
+    ?assertEqual("`like`", erma_utils:prepare_name("like", mysql)),
+    ?assertEqual("`user`.id", erma_utils:prepare_name("user.id", mysql)),
+    ?assertEqual("`user`.*", erma_utils:prepare_name("user.*", mysql)),
+    ?assertEqual("my_user.`where`", erma_utils:prepare_name("my_user.where", mysql)),
+    ok.
+
+prepare_table_name_test() ->
+    lists:foreach(
+        fun({Name, Wait}) ->
+                ?assertEqual(Wait, erma_utils:prepare_table_name(Name));
+            ({Name, Database, Wait}) ->
+                ?assertEqual(Wait, erma_utils:prepare_table_name(Name, Database))
+        end,
+        [
+            {<<"smth">>,                       "smth"},
+            {<<"user">>,                       "\"user\""},
+            {<<"user">>, postgresql,           "\"user\""},
+            {<<"user">>, mysql,                "`user`"},
+            {{"user", as, "u"},                ["\"user\"", " AS ", "u"]},
+            {{"user", as, "u"}, postgresql,    ["\"user\"", " AS ", "u"]},
+            {{"user", as, "u"}, mysql,         ["`user`",   " AS ", "u"]},
+            {{"smth", as, "user"},             ["smth",     " AS ", "\"user\""]},
+            {{"smth", as, "user"}, postgresql, ["smth",     " AS ", "\"user\""]},
+            {{"smth", as, "user"}, mysql,      ["smth",     " AS ", "`user`"]},
+            {{"user", as, "like"},             ["\"user\"", " AS ", "\"like\""]},
+            {{"user", as, "like"}, postgresql, ["\"user\"", " AS ", "\"like\""]},
+            {{"user", as, "like"}, mysql,      ["`user`",   " AS ", "`like`"]},
+            {{"smth", as, "s"},                ["smth",     " AS ", "s"]},
+            {{"smth", as, "s"}, postgresql,    ["smth",     " AS ", "s"]},
+            {{"smth", as, "s"}, mysql,         ["smth",     " AS ", "s"]}
+        ]),
+    ok.
+
 format_date_test() ->
     ?assertEqual("2014-08-05", erma_utils:format_date({2014,  8,  5})),
     ?assertEqual("2000-12-15", erma_utils:format_date({2000, 12, 15})),
