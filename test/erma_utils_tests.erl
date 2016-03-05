@@ -20,21 +20,21 @@ valid_name_test() ->
     ok.
 
 prepare_name_test() ->
-    ?assertEqual("`user`", erma_utils:prepare_name(user)),
-    ?assertEqual("`user`", erma_utils:prepare_name("user")),
-    ?assertEqual("`user`", erma_utils:prepare_name(<<"user">>)),
-    ?assertEqual("`user`", erma_utils:prepare_name(["us", "er"])),
-    ?assertEqual("`like`", erma_utils:prepare_name("like")),
+    ?assertEqual("\"user\"", erma_utils:prepare_name(user)),
+    ?assertEqual("\"user\"", erma_utils:prepare_name("user")),
+    ?assertEqual("\"user\"", erma_utils:prepare_name(<<"user">>)),
+    ?assertEqual("\"user\"", erma_utils:prepare_name(["us", "er"])),
+    ?assertEqual("\"like\"", erma_utils:prepare_name("like")),
     ?assertEqual("some_user", erma_utils:prepare_name("some_user")),
     ?assertEqual("some_user", erma_utils:prepare_name(["some", "_user"])),
     ?assertEqual("_some_other_user", erma_utils:prepare_name("_some_other_user")),
     ?assertEqual("users.id", erma_utils:prepare_name("users.id")),
     ?assertEqual("users.*", erma_utils:prepare_name("users.*")),
-    ?assertEqual("`user`.id", erma_utils:prepare_name("user.id")),
-    ?assertEqual("`user`.*", erma_utils:prepare_name("user.*")),
-    ?assertEqual("`user`.`where`", erma_utils:prepare_name("user.where")),
-    ?assertEqual("my_user.`where`", erma_utils:prepare_name("my_user.where")),
-    ?assertEqual("my_user.`where`", erma_utils:prepare_name(["my_user", ".", "where"])),
+    ?assertEqual("\"user\".id", erma_utils:prepare_name("user.id")),
+    ?assertEqual("\"user\".*", erma_utils:prepare_name("user.*")),
+    ?assertEqual("\"user\".\"where\"", erma_utils:prepare_name("user.where")),
+    ?assertEqual("my_user.\"where\"", erma_utils:prepare_name("my_user.where")),
+    ?assertEqual("my_user.\"where\"", erma_utils:prepare_name(["my_user", ".", "where"])),
     ok.
 
 format_date_test() ->

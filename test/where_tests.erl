@@ -45,7 +45,7 @@ where_test_() ->
                    ]}
           ]},
          %%
-         <<"SELECT * FROM post WHERE `state` IN ('active', 'suspended', 'unknown')">>
+         <<"SELECT * FROM post WHERE \"state\" IN ('active', 'suspended', 'unknown')">>
        },
        {
          %%
@@ -67,7 +67,7 @@ where_test_() ->
            "AND (blocked = false AND "
            "(posted > '2014-01-01 22:30:00' OR posted < '2013-12-20 12:15:00')) ",
            "AND (NOT (user_id = 20 OR user_id = 30)) ",
-           "AND `state` IN ('active', 'suspended', 'unknown')">>
+           "AND \"state\" IN ('active', 'suspended', 'unknown')">>
        },
        {
          %%
@@ -76,7 +76,7 @@ where_test_() ->
                             {"users.name", "?"}]}]}
           ]},
          %%
-         <<"SELECT users.* FROM users WHERE (users.`name` = ? OR users.`name` = ?)">>
+         <<"SELECT users.* FROM users WHERE (users.\"name\" = ? OR users.\"name\" = ?)">>
        },
        {
          %%
@@ -86,7 +86,7 @@ where_test_() ->
                             {"age", gt, "?"}]}]}
           ]},
          %%
-         <<"SELECT * FROM users WHERE ((`last` = ? AND `name` = ?) OR email = ? OR age > ?)">>
+         <<"SELECT * FROM users WHERE ((\"last\" = ? AND \"name\" = ?) OR email = ? OR age > ?)">>
        },
        {
          %%
@@ -105,7 +105,7 @@ where_test_() ->
                             {"name", like, "?"}]}]}
           ]},
          %%
-         <<"SELECT * FROM users WHERE (`name` LIKE ? OR `name` LIKE ?)">>
+         <<"SELECT * FROM users WHERE (\"name\" LIKE ? OR \"name\" LIKE ?)">>
        },
        {
          %%

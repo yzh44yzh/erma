@@ -45,7 +45,7 @@ prepare_name(Name0) ->
           [N1, N2] -> [prepare_name(N1), ".", prepare_name(N2)];
           _ -> case valid_name(Name) of
                    true -> Name;
-                   false -> ["`", Name, "`"]
+                   false -> ["\"", Name, "\""] % TODO double quote for postgresql, backtick for mysql
                end
       end).
 

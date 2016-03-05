@@ -12,36 +12,36 @@ relations_test_() ->
                     {left, <<"address">>},
                     {left, account}]}]},
          %%
-         <<"SELECT email.email, address.`state`, account.`name` ",
-           "FROM `user` ",
-           "LEFT JOIN email ON email.id = `user`.email_id ",
-           "LEFT JOIN address ON address.id = `user`.address_id ",
-           "LEFT JOIN account ON account.id = `user`.account_id">>
+         <<"SELECT email.email, address.\"state\", account.\"name\" ",
+           "FROM \"user\" ",
+           "LEFT JOIN email ON email.id = \"user\".email_id ",
+           "LEFT JOIN address ON address.id = \"user\".address_id ",
+           "LEFT JOIN account ON account.id = \"user\".account_id">>
        },
        {
          %%
          {select, ["user.id", "user.name"], {"foo_users", as, "user"}},
          %%
-         <<"SELECT `user`.id, `user`.`name` FROM foo_users AS `user`">>
+         <<"SELECT \"user\".id, \"user\".\"name\" FROM foo_users AS \"user\"">>
        },
        {
          %%
          {select, ["user.id", "user.name", "address.state"], {"foo_users", as, "user"},
           [{joins, [{left, {"boo_addresses", as, "address"}}]}]},
          %%
-         <<"SELECT `user`.id, `user`.`name`, address.`state` ",
-           "FROM foo_users AS `user` ",
-           "LEFT JOIN boo_addresses AS address ON address.id = `user`.boo_addresses_id">>
+         <<"SELECT \"user\".id, \"user\".\"name\", address.\"state\" ",
+           "FROM foo_users AS \"user\" ",
+           "LEFT JOIN boo_addresses AS address ON address.id = \"user\".boo_addresses_id">>
        },
        {
          %%
          {select, ["user.id", "user.name", "address.state"], {"foo_users", as, "user"},
           [{joins, [{inner, email}, {right, {"boo_addresses", as, "address"}}]}]},
          %%
-         <<"SELECT `user`.id, `user`.`name`, address.`state` ",
-           "FROM foo_users AS `user` ",
-           "INNER JOIN email ON email.id = `user`.email_id ",
-           "RIGHT JOIN boo_addresses AS address ON address.id = `user`.boo_addresses_id">>
+         <<"SELECT \"user\".id, \"user\".\"name\", address.\"state\" ",
+           "FROM foo_users AS \"user\" ",
+           "INNER JOIN email ON email.id = \"user\".email_id ",
+           "RIGHT JOIN boo_addresses AS address ON address.id = \"user\".boo_addresses_id">>
        },
        {
          %%
@@ -51,12 +51,12 @@ relations_test_() ->
                     {inner, {"address", as, "a2"}},
                     {full, "account"}]}]},
          %%
-         <<"SELECT email.email, address1.`state`, address2.`state`, account.`name` ",
-           "FROM `user` ",
-           "LEFT JOIN email ON email.id = `user`.email_id ",
-           "RIGHT JOIN address AS a1 ON a1.id = `user`.address_id ",
-           "INNER JOIN address AS a2 ON a2.id = `user`.address_id ",
-           "FULL JOIN account ON account.id = `user`.account_id">>
+         <<"SELECT email.email, address1.\"state\", address2.\"state\", account.\"name\" ",
+           "FROM \"user\" ",
+           "LEFT JOIN email ON email.id = \"user\".email_id ",
+           "RIGHT JOIN address AS a1 ON a1.id = \"user\".address_id ",
+           "INNER JOIN address AS a2 ON a2.id = \"user\".address_id ",
+           "FULL JOIN account ON account.id = \"user\".account_id">>
        },
        {
          %%
@@ -65,8 +65,8 @@ relations_test_() ->
                     {left, "address", [{fk, "addr_id"}]},
                     {left, "account", [{pk, "aid"}, {fk, "acc_id"}]}]}]},
          %%
-         <<"SELECT email.email, address.`state`, account.`name` ",
-           "FROM `user` AS u ",
+         <<"SELECT email.email, address.\"state\", account.\"name\" ",
+           "FROM \"user\" AS u ",
            "LEFT JOIN email AS e ON e.eid = u.email_id ",
            "LEFT JOIN address ON address.id = u.addr_id ",
            "LEFT JOIN account ON account.aid = u.acc_id">>
@@ -77,9 +77,9 @@ relations_test_() ->
           [{joins, [{left, "address"},
                     {inner, {"email", "address"}}]}]},
          %%
-         <<"SELECT `user`.id, email.`value`, address.city ",
-           "FROM `user` ",
-           "LEFT JOIN address ON address.id = `user`.address_id ",
+         <<"SELECT \"user\".id, email.\"value\", address.city ",
+           "FROM \"user\" ",
+           "LEFT JOIN address ON address.id = \"user\".address_id ",
            "INNER JOIN email ON email.id = address.email_id">>
        },
        {
@@ -88,10 +88,10 @@ relations_test_() ->
           [{joins, [{left, {"address", as, "a"}},
                     {inner, {{"email", as, "e"}, {"address", as, "a"}}}]}]},
          %%
-         <<"SELECT u.id, e.`value`, `a`.city ",
-           "FROM `user` AS u ",
-           "LEFT JOIN address AS `a` ON `a`.id = u.address_id ",
-           "INNER JOIN email AS e ON e.id = `a`.email_id">>
+         <<"SELECT u.id, e.\"value\", \"a\".city ",
+           "FROM \"user\" AS u ",
+           "LEFT JOIN address AS \"a\" ON \"a\".id = u.address_id ",
+           "INNER JOIN email AS e ON e.id = \"a\".email_id">>
        },
        {
          %%
@@ -100,11 +100,11 @@ relations_test_() ->
                     {inner, {{"email", as, "e"}, {"address", as, "a"}}, [{pk, "eid"}, {fk, "em_id"}]},
                     {inner, {"city", {"address", as, "a"}}}]}]},
          %%
-         <<"SELECT u.id, e.`value`, city.`value` ",
-           "FROM `user` AS u ",
-           "LEFT JOIN address AS `a` ON `a`.id = u.address_id ",
-           "INNER JOIN email AS e ON e.eid = `a`.em_id ",
-           "INNER JOIN city ON city.id = `a`.city_id">>
+         <<"SELECT u.id, e.\"value\", city.\"value\" ",
+           "FROM \"user\" AS u ",
+           "LEFT JOIN address AS \"a\" ON \"a\".id = u.address_id ",
+           "INNER JOIN email AS e ON e.eid = \"a\".em_id ",
+           "INNER JOIN city ON city.id = \"a\".city_id">>
        },
        {
          %%
@@ -123,10 +123,10 @@ relations_test_() ->
            {where, [{"state.status", "?"}]},
            {order, ["address.id"]}]},
          %%
-         <<"SELECT address.*, `state`.* ",
+         <<"SELECT address.*, \"state\".* ",
            "FROM address ",
-           "LEFT JOIN `state` ON `state`.id = address.state_id ",
-           "WHERE `state`.`status` = ? ",
+           "LEFT JOIN \"state\" ON \"state\".id = address.state_id ",
+           "WHERE \"state\".\"status\" = ? ",
            "ORDER BY address.id ASC">>
        },
        {
@@ -136,11 +136,11 @@ relations_test_() ->
            {where, [{"address.status", "?"}]},
            {order, ["user.id"]}]},
          %%
-         <<"SELECT `user`.*, address.* ",
-           "FROM `user` ",
-           "LEFT JOIN address ON address.user_id = `user`.id ",
-           "WHERE address.`status` = ? ",
-           "ORDER BY `user`.id ASC">>
+         <<"SELECT \"user\".*, address.* ",
+           "FROM \"user\" ",
+           "LEFT JOIN address ON address.user_id = \"user\".id ",
+           "WHERE address.\"status\" = ? ",
+           "ORDER BY \"user\".id ASC">>
        },
        {
          %%
@@ -159,19 +159,19 @@ relations_test_() ->
                     {left, {{"state", as, "s"}, {"address", as, "a"}}}]},
            {where, [{'and', [{"s.state", "nc"}, {"a.id", gt, 5}]}]}]},
          %%
-         <<"SELECT u.*, `a`.*, s.* FROM users AS u ",
-           "LEFT JOIN address AS `a` ON `a`.users_id = u.id ",
-           "LEFT JOIN `state` AS s ON s.id = `a`.state_id ",
-           "WHERE (s.`state` = 'nc' AND `a`.id > 5)">>
+         <<"SELECT u.*, \"a\".*, s.* FROM users AS u ",
+           "LEFT JOIN address AS \"a\" ON \"a\".users_id = u.id ",
+           "LEFT JOIN \"state\" AS s ON s.id = \"a\".state_id ",
+           "WHERE (s.\"state\" = 'nc' AND \"a\".id > 5)">>
        },
        {
          %%
          {select, ["first_name", "last_name", "address.state"], "user",
           [{joins, [{left, "address"}]}]},
          %%
-         <<"SELECT first_name, last_name, address.`state` ",
-           "FROM `user` ",
-           "LEFT JOIN address ON address.id = `user`.address_id">>
+         <<"SELECT first_name, last_name, address.\"state\" ",
+           "FROM \"user\" ",
+           "LEFT JOIN address ON address.id = \"user\".address_id">>
        },
        {
          %%
@@ -179,9 +179,9 @@ relations_test_() ->
           [{joins, [{left, "address"}]},
            {where, [{"email", "some@where.com"}]}]},
          %%
-         <<"SELECT first_name, last_name, address.`state` ",
-           "FROM `user` ",
-           "LEFT JOIN address ON address.id = `user`.address_id ",
+         <<"SELECT first_name, last_name, address.\"state\" ",
+           "FROM \"user\" ",
+           "LEFT JOIN address ON address.id = \"user\".address_id ",
            "WHERE email = 'some@where.com'">>
        },
        {
@@ -190,8 +190,8 @@ relations_test_() ->
           [{joins, [{left, {"addresses", as, "address"}, [{pk, "userID"}, {fk, "userID"}]}]},
            {where, [{"last_login", lt, {date, {2014, 1, 20}}}]}]},
          %%
-         <<"SELECT * FROM foo_users AS `user` ",
-           "LEFT JOIN addresses AS address ON address.userID = `user`.userID ",
+         <<"SELECT * FROM foo_users AS \"user\" ",
+           "LEFT JOIN addresses AS address ON address.userID = \"user\".userID ",
            "WHERE last_login < '2014-01-20'">>
        }
       ]).

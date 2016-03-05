@@ -34,7 +34,7 @@ aggregate_test_() ->
          {select, [{max, "users.age"}, {avg, "users.height"}, "level"], "users",
           [{where, [{"users.state", '<>', "blocked"}]}, {group, [<<"level">>]}]},
          %%
-         <<"SELECT MAX(users.age), AVG(users.height), `level` FROM users WHERE users.`state` <> 'blocked' GROUP BY `level`">>
+         <<"SELECT MAX(users.age), AVG(users.height), \"level\" FROM users WHERE users.\"state\" <> 'blocked' GROUP BY \"level\"">>
        },
        {
          %%
@@ -66,6 +66,6 @@ aggregate_test_() ->
          {select, [{max, "users.age", as, "max_age"}, {avg, "users.height", as, "avg_height"}], "users",
           [{where, [{"users.state", '<>', "blocked"}]}]},
          %%
-         <<"SELECT MAX(users.age) AS max_age, AVG(users.height) AS avg_height FROM users WHERE users.`state` <> 'blocked'">>
+         <<"SELECT MAX(users.age) AS max_age, AVG(users.height) AS avg_height FROM users WHERE users.\"state\" <> 'blocked'">>
        }
       ]).

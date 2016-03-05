@@ -9,13 +9,13 @@ placeholders_test_() ->
          %%
          {insert, "users", ["first", "last", "age"], ["?", "?", "?"]},
          %%
-         <<"INSERT INTO users (`first`, `last`, age) VALUES (?, ?, ?)">>
+         <<"INSERT INTO users (\"first\", \"last\", age) VALUES (?, ?, ?)">>
        },
        {
          %%
          {insert, "users", ["first", <<"last">>, age], ["$1", "$2", "$3"]},
          %%
-         <<"INSERT INTO users (`first`, `last`, age) VALUES ($1, $2, $3)">>
+         <<"INSERT INTO users (\"first\", \"last\", age) VALUES ($1, $2, $3)">>
        },
        {
          %%
@@ -25,7 +25,7 @@ placeholders_test_() ->
                             {"age", gt, "?"}]}]}
           ]},
          %%
-         <<"SELECT * FROM users WHERE ((`last` = ? AND `name` = ?) OR email = ? OR age > ?)">>
+         <<"SELECT * FROM users WHERE ((\"last\" = ? AND \"name\" = ?) OR email = ? OR age > ?)">>
        },
        {
          %%
@@ -35,19 +35,19 @@ placeholders_test_() ->
                             {"age", gt, "$3"}]}]}
           ]},
          %%
-         <<"SELECT * FROM users WHERE ((`last` = $1 AND `name` = $1) OR email = $2 OR age > $3)">>
+         <<"SELECT * FROM users WHERE ((\"last\" = $1 AND \"name\" = $1) OR email = $2 OR age > $3)">>
        },
        {
          %%
          {update, "users", [{"first", "Chris"}, {"last", "?"}], [{where, [{"id", "?"}]}]},
          %%
-         <<"UPDATE users SET `first` = 'Chris', `last` = ? WHERE id = ?">>
+         <<"UPDATE users SET \"first\" = 'Chris', \"last\" = ? WHERE id = ?">>
        },
        {
          %%
          {update, "users", [{"first", "Chris"}, {"last", "$2"}], [{where, [{"id", "$1"}]}]},
          %%
-         <<"UPDATE users SET `first` = 'Chris', `last` = $2 WHERE id = $1">>
+         <<"UPDATE users SET \"first\" = 'Chris', \"last\" = $2 WHERE id = $1">>
        },
        {
          %%

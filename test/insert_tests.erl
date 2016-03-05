@@ -9,26 +9,26 @@ insert_test_() ->
          %%
          {insert, "users", ["first", "last"], ["Chris", "Granger"]},
          %%
-         <<"INSERT INTO users (`first`, `last`) VALUES ('Chris', 'Granger')">>
+         <<"INSERT INTO users (\"first\", \"last\") VALUES ('Chris', 'Granger')">>
        },
        {
          %%
          {insert, "users", ["first", last, <<"age">>], ["Bob", <<"Dou">>, 25]},
          %%
-         <<"INSERT INTO users (`first`, `last`, age) VALUES ('Bob', 'Dou', 25)">>
+         <<"INSERT INTO users (\"first\", \"last\", age) VALUES ('Bob', 'Dou', 25)">>
        },
        {
          %%
          {insert, "users", ["first", "last"], ["?", "?"]},
          %%
-         <<"INSERT INTO users (`first`, `last`) VALUES (?, ?)">>
+         <<"INSERT INTO users (\"first\", \"last\") VALUES (?, ?)">>
        },
        {
          %%
          {insert_rows, "users", ["first", "last"],
           [["Chris", "Granger"], ["Bob", "Dou"], ["Helen", "Rice"]]},
          %%
-         <<"INSERT INTO users (`first`, `last`) ",
+         <<"INSERT INTO users (\"first\", \"last\") ",
            "VALUES ('Chris', 'Granger'), ('Bob', 'Dou'), ('Helen', 'Rice')">>
        },
        {
@@ -36,7 +36,7 @@ insert_test_() ->
          {insert_rows, "users", ["first", "last", "age"],
           [["Bill", "Foo", 24], ["Bob", "Dou", 25], ["Helen", "Rice", 21]]},
          %%
-         <<"INSERT INTO users (`first`, `last`, age) ",
+         <<"INSERT INTO users (\"first\", \"last\", age) ",
            "VALUES ('Bill', 'Foo', 24), ('Bob', 'Dou', 25), ('Helen', 'Rice', 21)">>
        },
        {

@@ -16,9 +16,9 @@ subselect1_test() ->
 subselect2_test() ->
     SQ = {select, ["state_id"], "user_states", [{where, [{"type", '<>', "obsolete"}]}]},
     Q = {update, "users", [{"level", 15}], [{where, [{"state_id", in, SQ}]}]},
-    S = <<"UPDATE users SET `level` = 15 ",
+    S = <<"UPDATE users SET \"level\" = 15 ",
           "WHERE state_id IN ",
-          "(SELECT state_id FROM user_states WHERE `type` <> 'obsolete')">>,
+          "(SELECT state_id FROM user_states WHERE \"type\" <> 'obsolete')">>,
     ?assertEqual(S, erma:build(Q)),
     ok.
 

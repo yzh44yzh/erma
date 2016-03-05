@@ -9,21 +9,21 @@ returning_test_() ->
          %%
          {insert, "users", ["first", "last"], ["Chris", "Granger"], [{returning, id}]},
          %%
-         <<"INSERT INTO users (`first`, `last`) VALUES ('Chris', 'Granger') RETURNING id">>
+         <<"INSERT INTO users (\"first\", \"last\") VALUES ('Chris', 'Granger') RETURNING id">>
        },
        {
          %%
          {insert, "users", ["first", "last", "age"], ["Bob", "Dou", 25],
           [{returning, ["id", "first", "last"]}]},
          %%
-         <<"INSERT INTO users (`first`, `last`, age) VALUES ('Bob', 'Dou', 25) ",
-           "RETURNING id, `first`, `last`">>
+         <<"INSERT INTO users (\"first\", \"last\", age) VALUES ('Bob', 'Dou', 25) ",
+           "RETURNING id, \"first\", \"last\"">>
        },
        {
          %%
          {insert, "users", ["first", "last"], ["?", "?"], [{returning, id}]},
          %%
-         <<"INSERT INTO users (`first`, `last`) VALUES (?, ?) RETURNING id">>
+         <<"INSERT INTO users (\"first\", \"last\") VALUES (?, ?) RETURNING id">>
        },
        {
          %%
@@ -31,7 +31,7 @@ returning_test_() ->
           [["Bill", "Foo", 24], ["Bob", "Dou", 25], ["Helen", "Rice", 21]],
           [{returning, id}]},
          %%
-         <<"INSERT INTO users (`first`, `last`, age) ",
+         <<"INSERT INTO users (\"first\", \"last\", age) ",
            "VALUES ('Bill', 'Foo', 24), ('Bob', 'Dou', 25), ('Helen', 'Rice', 21) ",
            "RETURNING id">>
        },
@@ -42,7 +42,7 @@ returning_test_() ->
           [{returning, ["name", <<"age">>, "id"]}]},
          %%
          <<"INSERT INTO users VALUES (5, 'Bob', 'Dou', 25) ",
-           "RETURNING `name`, age, id">>
+           "RETURNING \"name\", age, id">>
        },
        {
          %%
@@ -57,7 +57,7 @@ returning_test_() ->
          %%
          {update, "users", [{"first", "Chris"}], [{returning, id}]},
          %%
-         <<"UPDATE users SET `first` = 'Chris' RETURNING id">>
+         <<"UPDATE users SET \"first\" = 'Chris' RETURNING id">>
        },
        {
          %%
@@ -65,7 +65,7 @@ returning_test_() ->
           [{where, [{"id", "?"}]},
            {returning, [<<"id">>, <<"first">>]}]},
          %%
-         <<"UPDATE users SET `first` = ? WHERE id = ? RETURNING id, `first`">>
+         <<"UPDATE users SET \"first\" = ? WHERE id = ? RETURNING id, \"first\"">>
        },
        {
          %%
@@ -73,8 +73,8 @@ returning_test_() ->
           [{where, [{"id", "?"}]},
            {returning, ["id", "name", <<"first">>, "last", <<"age">>]}]},
          %%
-         <<"UPDATE users SET `first` = 'Chris', `last` = ? WHERE id = ? ",
-           "RETURNING id, `name`, `first`, `last`, age">>
+         <<"UPDATE users SET \"first\" = 'Chris', \"last\" = ? WHERE id = ? ",
+           "RETURNING id, \"name\", \"first\", \"last\", age">>
        },
        {
          %%
@@ -82,7 +82,7 @@ returning_test_() ->
           [{"first", "?"}, {"last", "?"}],
           [{returning, ["id"]}]},
          %%
-         <<"UPDATE users SET `first` = ?, `last` = ? RETURNING id">>
+         <<"UPDATE users SET \"first\" = ?, \"last\" = ? RETURNING id">>
        },
        {
          %%
@@ -92,7 +92,7 @@ returning_test_() ->
           [{where, [{"id", 3}]},
            {returning, id}]},
          %%
-         <<"UPDATE users SET `first` = 'Chris', `last` = 'Granger' ",
+         <<"UPDATE users SET \"first\" = 'Chris', \"last\" = 'Granger' ",
            "WHERE id = 3 RETURNING id">>
        },
        {
@@ -111,7 +111,7 @@ returning_test_() ->
          %%
          {delete, "users", [{returning, ["name", "age"]}]},
          %%
-         <<"DELETE FROM users RETURNING `name`, age">>
+         <<"DELETE FROM users RETURNING \"name\", age">>
        },
        {
          %%

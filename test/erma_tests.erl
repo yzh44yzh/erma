@@ -5,12 +5,12 @@
 
 select_test() ->
     Q1 = {select, [], "user"},
-    S1 = <<"SELECT * FROM `user`">>,
+    S1 = <<"SELECT * FROM \"user\"">>,
     ?assertEqual(S1, erma:build(Q1)),
 
     Q2 = {select, ["first_name", "last_name", "address.state"], "user",
           [{where, [{"email", "some@where.com"}]}]},
-    S2 = <<"SELECT first_name, last_name, address.`state` FROM `user` ",
+    S2 = <<"SELECT first_name, last_name, address.\"state\" FROM \"user\" ",
            "WHERE email = 'some@where.com'">>,
     ?assertEqual(S2, erma:build(Q2)),
 
@@ -28,12 +28,12 @@ select_test() ->
 
 insert_test() ->
     Q1 = {insert, "users", ["first", "last", "age"], ["Bob", "Dou", 25]},
-    S1 = <<"INSERT INTO users (`first`, `last`, age) VALUES ('Bob', 'Dou', 25)">>,
+    S1 = <<"INSERT INTO users (\"first\", \"last\", age) VALUES ('Bob', 'Dou', 25)">>,
     ?assertEqual(S1, erma:build(Q1)),
 
     Q2 = {insert_rows, "users", ["first", "last", "age"],
           [["Bill", "Foo", 24], ["Bob", "Dou", 25], ["Helen", "Rice", 21]]},
-    S2 = <<"INSERT INTO users (`first`, `last`, age) ",
+    S2 = <<"INSERT INTO users (\"first\", \"last\", age) ",
            "VALUES ('Bill', 'Foo', 24), ('Bob', 'Dou', 25), ('Helen', 'Rice', 21)">>,
     ?assertEqual(S2, erma:build(Q2)),
 
@@ -52,16 +52,16 @@ update_test() ->
           [{"first", "Chris"},
            {"last", "Granger"}],
           [{where, [{"id", 3}]}]},
-    S1 = <<"UPDATE users SET `first` = 'Chris', `last` = 'Granger' WHERE id = 3">>,
+    S1 = <<"UPDATE users SET \"first\" = 'Chris', \"last\" = 'Granger' WHERE id = 3">>,
     ?assertEqual(S1, erma:build(Q1)),
 
     Q2 = {update, "users", [{"first", "Chris"}, {"last", "?"}], [{where, [{"id", "?"}]}]},
-    S2 = <<"UPDATE users SET `first` = 'Chris', `last` = ? WHERE id = ?">>,
+    S2 = <<"UPDATE users SET \"first\" = 'Chris', \"last\" = ? WHERE id = ?">>,
     ?assertEqual(S2, erma:build(Q2)),
 
     Q3 = {update, "users", [{"first", "Chris"}, {"last", "Granger"}],
           [{where, [{"id", 3}]}, {returning, id}]},
-    S3 = <<"UPDATE users SET `first` = 'Chris', `last` = 'Granger' ",
+    S3 = <<"UPDATE users SET \"first\" = 'Chris', \"last\" = 'Granger' ",
            "WHERE id = 3 RETURNING id">>,
     ?assertEqual(S3, erma:build(Q3)),
     ok.
@@ -83,17 +83,17 @@ relations_test() ->
           [{joins, [{left, "email"},
                     {left, <<"address">>},
                     {left, account}]}]},
-    S1 = <<"SELECT email.email, address.`state`, account.`name` FROM `user` ",
-           "LEFT JOIN email ON email.id = `user`.email_id ",
-           "LEFT JOIN address ON address.id = `user`.address_id ",
-           "LEFT JOIN account ON account.id = `user`.account_id">>,
+    S1 = <<"SELECT email.email, address.\"state\", account.\"name\" FROM \"user\" ",
+           "LEFT JOIN email ON email.id = \"user\".email_id ",
+           "LEFT JOIN address ON address.id = \"user\".address_id ",
+           "LEFT JOIN account ON account.id = \"user\".account_id">>,
     ?assertEqual(S1, erma:build(Q1)),
 
     Q2 = {select, ["email.email", "address.state", "account.name"], {"user", as, "u"},
           [{joins, [{left, {"email", as, "e"}, [{pk, "eid"}]},
                     {right, "address", [{fk, "addr_id"}]},
                     {full, "account", [{pk, "aid"}, {fk, "acc_id"}]}]}]},
-    S2 = <<"SELECT email.email, address.`state`, account.`name` FROM `user` AS u ",
+    S2 = <<"SELECT email.email, address.\"state\", account.\"name\" FROM \"user\" AS u ",
            "LEFT JOIN email AS e ON e.eid = u.email_id ",
            "RIGHT JOIN address ON address.id = u.addr_id ",
            "FULL JOIN account ON account.aid = u.acc_id">>,
@@ -117,7 +117,7 @@ where_test() ->
           [{where, [{"state", in, ["active", "suspended", "unknown"]}]}
           ]},
     S2 = <<"SELECT * FROM post ",
-           "WHERE `state` IN ('active', 'suspended', 'unknown')">>,
+           "WHERE \"state\" IN ('active', 'suspended', 'unknown')">>,
     ?assertEqual(S2, erma:build(Q2)),
 
     DT1 = {datetime, {{2014, 1, 1}, {22, 30, 0}}},
@@ -139,7 +139,7 @@ where_test() ->
            "AND (blocked = false AND "
            "(posted > '2014-01-01 22:30:00' OR posted < '2013-12-20 12:15:00')) ",
            "AND (NOT (user_id = 20 OR user_id = 30)) ",
-           "AND `state` IN ('active', 'suspended', 'unknown')">>,
+           "AND \"state\" IN ('active', 'suspended', 'unknown')">>,
     ?assertEqual(S3, erma:build(Q3)),
     ok.
 
@@ -162,10 +162,10 @@ append_test() ->
     Q4 = {select, ["u.id", "email.email", "a.state", "account.name"], {"user", as, "u"},
           [{joins, [{left, "email"}]}]},
     Q5 = erma:append(Q4, [{joins, [{left, {"address", as, "a"}}, {right, "account"}]}]),
-    S5 = <<"SELECT u.id, email.email, `a`.`state`, account.`name` ",
-           "FROM `user` AS u ",
+    S5 = <<"SELECT u.id, email.email, \"a\".\"state\", account.\"name\" ",
+           "FROM \"user\" AS u ",
            "LEFT JOIN email ON email.id = u.email_id ",
-           "LEFT JOIN address AS `a` ON `a`.id = u.address_id ",
+           "LEFT JOIN address AS \"a\" ON \"a\".id = u.address_id ",
            "RIGHT JOIN account ON account.id = u.account_id">>,
     ?assertEqual(S5, erma:build(Q5)),
     ok.

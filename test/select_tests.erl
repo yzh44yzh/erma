@@ -77,64 +77,64 @@ select_test_() ->
          %%
          {select_distinct, ["id", name, <<"age">>], "user"},
          %%
-         <<"SELECT DISTINCT id, `name`, age FROM `user`">>
+         <<"SELECT DISTINCT id, \"name\", age FROM \"user\"">>
        },
        {
          %%
          {select, ["id", "username"], "user", [{order, ["created"]}]},
          %%
-         <<"SELECT id, username FROM `user` ORDER BY created ASC">>
+         <<"SELECT id, username FROM \"user\" ORDER BY created ASC">>
        },
        {
          %%
          {select, ["id", "username"], "user",
           [{order, ["created", {"username", desc}]}]},
          %%
-         <<"SELECT id, username FROM `user` ORDER BY created ASC, username DESC">>
+         <<"SELECT id, username FROM \"user\" ORDER BY created ASC, username DESC">>
        },
        {
          %%
          {select, ["id", "username"], "user"},
          %%
-         <<"SELECT id, username FROM `user`">>
+         <<"SELECT id, username FROM \"user\"">>
        },
        {
          %%
          {select, ["id", "username"], "user", [{limit, 20}]},
          %%
-         <<"SELECT id, username FROM `user` LIMIT 20">>
+         <<"SELECT id, username FROM \"user\" LIMIT 20">>
        },
        {
          %%
          {select, ["id", "username"], "user", [{offset, 0, limit, 20}]},
          %%
-         <<"SELECT id, username FROM `user` OFFSET 0 LIMIT 20">>
+         <<"SELECT id, username FROM \"user\" OFFSET 0 LIMIT 20">>
        },
        {
          %%
          {select, ["id", "username"], "user", [{offset, 100, limit, 20}]},
          %%
-         <<"SELECT id, username FROM `user` OFFSET 100 LIMIT 20">>
+         <<"SELECT id, username FROM \"user\" OFFSET 100 LIMIT 20">>
        },
        {
          %%
          {select, [], <<"user">>},
          %%
-         <<"SELECT * FROM `user`">>
+         <<"SELECT * FROM \"user\"">>
        },
        {
          %%
          {select, [], <<"user">>, [{where, [{<<"email">>, <<"some@where.com">>}]}]},
          %%
-         <<"SELECT * FROM `user` WHERE email = 'some@where.com'">>
+         <<"SELECT * FROM \"user\" WHERE email = 'some@where.com'">>
        },
        {
          %%
          {select, [<<"first_name">>, "last_name", "address.state"], user,
           [{where, [{"email", <<"some@where.com">>}]}]},
          %%
-         <<"SELECT first_name, last_name, address.`state` ",
-           "FROM `user` ",
+         <<"SELECT first_name, last_name, address.\"state\" ",
+           "FROM \"user\" ",
            "WHERE email = 'some@where.com'">>
        },
        {
@@ -142,22 +142,22 @@ select_test_() ->
          {select, ["id", "username"], "user",
           [{order, ["id", "created", {"last_login", asc}, {"username", desc}]}]},
          %%
-         <<"SELECT id, username FROM `user` ORDER BY id ASC, created ASC, last_login ASC, username DESC">>
+         <<"SELECT id, username FROM \"user\" ORDER BY id ASC, created ASC, last_login ASC, username DESC">>
        },
        {
          %%
          {select, [{"id", as, "user_id"}, "username"], "user",
           [{order, ["user_id", "created", {"last_login", asc}, {"username", desc}]}]},
          %%
-         <<"SELECT id AS user_id, username FROM `user` ORDER BY user_id ASC, created ASC, last_login ASC, username DESC">>
+         <<"SELECT id AS user_id, username FROM \"user\" ORDER BY user_id ASC, created ASC, last_login ASC, username DESC">>
        },
        {
          %%
          {select, [{<<"first_name">>, as, "fname"}, {"last_name", as, "lname"}, "address.state"], user,
           [{where, [{"fname", '<>', <<"Bob">>}]}]},
          %%
-         <<"SELECT first_name AS fname, last_name AS lname, address.`state` ",
-           "FROM `user` ",
+         <<"SELECT first_name AS fname, last_name AS lname, address.\"state\" ",
+           "FROM \"user\" ",
            "WHERE fname <> 'Bob'">>
        },
        {
@@ -166,7 +166,7 @@ select_test_() ->
           [{where, [{"fname", '<>', <<"Bob">>}]}]},
          %%
          <<"SELECT level, address.state ",
-           "FROM `user` ",
+           "FROM \"user\" ",
            "WHERE fname <> 'Bob'">>
        },
        {
@@ -175,7 +175,7 @@ select_test_() ->
           [{where, [{"fname", '<>', <<"Bob">>}]}]},
          %%
          <<"SELECT SUM(id) ",
-           "FROM `user` ",
+           "FROM \"user\" ",
            "WHERE fname <> 'Bob'">>
        }
       ]).
