@@ -101,19 +101,19 @@ build_delete({Table, Entities}, #{database := Database}) ->
 append({select, Fields, Table}, NewEntities) ->
     {select, Fields, Table, NewEntities};
 append({select, Fields, Table, Entities}, NewEntities) ->
-    {select, Fields, Table, merge(Entities, NewEntities)};
+    {select, Fields, Table, merge(NewEntities, Entities)};
 append({select_distinct, Fields, Table}, NewEntities) ->
     {select_distinct, Fields, Table, NewEntities};
 append({select_distinct, Fields, Table, Entities}, NewEntities) ->
-    {select_distinct, Fields, Table, merge(Entities, NewEntities)};
+    {select_distinct, Fields, Table, merge(NewEntities, Entities)};
 append({update, Table, KV}, NewEntities) ->
     {update, Table, KV, NewEntities};
 append({update, Table, KV, Entities}, NewEntities) ->
-    {update, Table, KV, merge(Entities, NewEntities)};
+    {update, Table, KV, merge(NewEntities, Entities)};
 append({delete, Table}, NewEntities) ->
     {delete, Table, NewEntities};
 append({delete, Table, Entities}, NewEntities) ->
-    {delete, Table, merge(Entities, NewEntities)};
+    {delete, Table, merge(NewEntities, Entities)};
 append(Query, _NewEntities) -> Query.
 
 
@@ -186,7 +186,6 @@ build_join_entity(JoinType, JoinTable, ToTable, JoinProps, Database) ->
                      false -> prepare_name([JoinName, "_id"], Database);
                      {fk, Fk} -> prepare_name(Fk, Database)
                  end,
-    io:format("ToAlias:~p, JoinName:~p, ForeignKey:~p~n", [ToAlias, JoinName, ForeignKey]),
     [Join, Table, " ON ", JoinAlias, ".", PrimaryKey, " = ", ToAlias, ".", ForeignKey].
 
 
@@ -351,10 +350,15 @@ build_returning(Entities, Database) ->
 
 
 -spec merge(list(), list()) -> list().
-merge([], Entities2) -> Entities2;
-merge(Entities1, []) -> Entities1;
-merge([{Tag, Props1} | Rest], Entities2) ->
-    case lists:keyfind(Tag, 1, Entities2) of
-        false -> [{Tag, Props1} | merge(Rest, Entities2)];
-        {Tag, Props2} -> [{Tag, Props1 ++ Props2} | merge(Rest, lists:keydelete(Tag, 1, Entities2))]
+merge([], Acc) -> Acc;
+merge(NewEntities, []) -> NewEntities;
+merge([{Tag, Props} | NewEntities], Acc) ->
+    case lists:keyfind(Tag, 1, Acc) of
+        false -> merge(NewEntities, [{Tag, Props} | Acc]);
+        {limit, _} ->
+            Acc2 = [{limit, Props} | lists:keydelete(Tag, 1, Acc)],
+            merge(NewEntities, Acc2);
+        {Tag, OldProps} ->
+            Acc2 = [{Tag, OldProps ++ Props} | lists:keydelete(Tag, 1, Acc)],
+            merge(NewEntities, Acc2)
     end.

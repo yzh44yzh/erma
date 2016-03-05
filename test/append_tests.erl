@@ -13,8 +13,10 @@ append1_test() ->
     Q2 = erma:append(Q1, [{where, [{"active", true}, {"age", '>', 18}]}, {order, ["created"]}]),
     ?assertEqual(
        {select, ["id", "username"], "user",
-        [{where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]},
-         {order, ["created"]}]},
+           [
+               {order, ["created"]},
+               {where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]}
+           ]},
        Q2),
     S2 = <<"SELECT id, username ",
            "FROM \"user\" ",
@@ -27,9 +29,11 @@ append1_test() ->
     Q3 = erma:append(Q2, [{limit, 20}]),
     ?assertEqual(
        {select, ["id", "username"], "user",
-        [{where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]},
-         {order, ["created"]},
-         {limit, 20}]},
+           [
+               {limit, 20},
+               {order, ["created"]},
+               {where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]}
+           ]},
        Q3),
     S3 = <<"SELECT id, username ",
            "FROM \"user\" ",
@@ -43,9 +47,11 @@ append1_test() ->
     Q4 = erma:append(Q3, [{order, [{"id", desc}]}]),
     ?assertEqual(
        {select, ["id", "username"], "user",
-        [{where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]},
-         {order, ["created", {"id", desc}]},
-         {limit, 20}]},
+           [
+               {order, ["created", {"id", desc}]},
+               {limit, 20},
+               {where, [{"email", like, "*@gmail.com"}, {"active", true}, {"age", '>', 18}]}
+           ]},
        Q4),
     S4 = <<"SELECT id, username ",
            "FROM \"user\" ",
@@ -104,9 +110,10 @@ append4_test() ->
                           {order, [<<"дата_создания"/utf8>>]}]),
     ?assertEqual(
        {select, ["id", "username"], <<"пользователь"/utf8>>,
-        [{where, [{"email", like, "*@gmail.com"}, {<<"активен"/utf8>>, true}, {<<"возраст"/utf8>>, '>', 18}]},
-         {order, [<<"дата_создания"/utf8>>]}
-        ]},
+           [
+               {order, [<<"дата_создания"/utf8>>]},
+               {where, [{"email", like, "*@gmail.com"}, {<<"активен"/utf8>>, true}, {<<"возраст"/utf8>>, '>', 18}]}
+           ]},
        Q2),
     S2 = <<"SELECT id, username ",
            "FROM \"пользователь\" "/utf8,
@@ -115,4 +122,58 @@ append4_test() ->
            "AND \"возраст\" > 18 "/utf8,
            "ORDER BY \"дата_создания\" ASC"/utf8>>,
     ?assertEqual(S2, erma:build(Q2)),
+    ok.
+
+
+append5_test() ->
+    Q = {select, [id, name], users, [{where, [{email, "some@where.com"}]}]},
+    ?assertEqual(<<"SELECT id, \"name\" FROM users WHERE email = 'some@where.com'">>, erma:build(Q)),
+
+    Entities = [
+        {joins, [{left, "email"}]},
+        {joins, [{left, "category"}]},
+        {joins, [{inner, "tag"}]},
+        {where, [{id, 5}]},
+        {where, [{age, gt, 30}]},
+        {where, [{city, "Minsk"}]},
+        {order, [id]},
+        {order, [{name, desc}]},
+        {limit, 10},
+        {limit, 20},
+        {limit, 30},
+        {group, [city, age]},
+        {having, [{age, gt, 30}]},
+        {group, [tag]},
+        {having, [{city, "Minsk"}, {id, gt, 10}]}
+    ],
+    WaitEntities = [
+        {joins,[{left,"email"}, {left,"category"}, {inner,"tag"}]},
+        {where,[{email,"some@where.com"}, {id,5}, {age,gt,30}, {city,"Minsk"}]},
+        {group, [city, age, tag]},
+        {having, [{age, gt, 30}, {city, "Minsk"}, {id, gt, 10}]},
+        {order,[id, {name,desc}]},
+        {limit,30}
+    ],
+
+    GotRes = erma:append(Q, Entities),
+    {select, _, _, GotEntities} = GotRes,
+    ?assertEqual(lists:sort(WaitEntities), lists:sort(GotEntities)),
+
+    SQL = <<"SELECT id, \"name\" ",
+        "FROM users ",
+        "LEFT JOIN email ON email.id = users.email_id ",
+        "LEFT JOIN category ON category.id = users.category_id ",
+        "INNER JOIN tag ON tag.id = users.tag_id ",
+        "WHERE email = 'some@where.com' ",
+        "AND id = 5 ",
+        "AND age > 30 ",
+        "AND city = 'Minsk' ",
+        "GROUP BY city, age, tag ",
+        "HAVING age > 30 ",
+        "AND city = 'Minsk' ",
+        "AND id > 10 ",
+        "ORDER BY id ASC, \"name\" DESC ",
+        "LIMIT 30">>,
+
+    ?assertEqual(SQL, erma:build(GotRes)),
     ok.
