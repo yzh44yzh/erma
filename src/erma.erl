@@ -99,19 +99,19 @@ build_delete({Table, Entities}, #{database := Database}) ->
 
 -spec append(sql_query(), list()) -> sql_query().
 append({select, Fields, Table}, NewEntities) ->
-    {select, Fields, Table, NewEntities};
+    {select, Fields, Table, merge(NewEntities, [])};
 append({select, Fields, Table, Entities}, NewEntities) ->
     {select, Fields, Table, merge(NewEntities, Entities)};
 append({select_distinct, Fields, Table}, NewEntities) ->
-    {select_distinct, Fields, Table, NewEntities};
+    {select_distinct, Fields, Table, merge(NewEntities, [])};
 append({select_distinct, Fields, Table, Entities}, NewEntities) ->
     {select_distinct, Fields, Table, merge(NewEntities, Entities)};
 append({update, Table, KV}, NewEntities) ->
-    {update, Table, KV, NewEntities};
+    {update, Table, KV, merge(NewEntities, [])};
 append({update, Table, KV, Entities}, NewEntities) ->
     {update, Table, KV, merge(NewEntities, Entities)};
 append({delete, Table}, NewEntities) ->
-    {delete, Table, NewEntities};
+    {delete, Table, merge(NewEntities, [])};
 append({delete, Table, Entities}, NewEntities) ->
     {delete, Table, merge(NewEntities, Entities)};
 append(Query, _NewEntities) -> Query.
@@ -351,8 +351,8 @@ build_returning(Entities, Database) ->
 
 -spec merge(list(), list()) -> list().
 merge([], Acc) -> Acc;
-merge(NewEntities, []) -> NewEntities;
 merge([{Tag, Props} | NewEntities], Acc) ->
+    io:format("merge ~p ~p~n", [Tag, Props]),
     case lists:keyfind(Tag, 1, Acc) of
         false -> merge(NewEntities, [{Tag, Props} | Acc]);
         {limit, _} ->

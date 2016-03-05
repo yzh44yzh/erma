@@ -177,3 +177,9 @@ append5_test() ->
 
     ?assertEqual(SQL, erma:build(GotRes)),
     ok.
+
+
+append6_test() ->
+    Res = erma:append({select, [], "tab"}, [{order, ["id"]}, {where, [{"col", "$1"}]}, {where, [{"col2", "$2"}]}]),
+    ?assertEqual({select,[],"tab", [{where,[{"col","$1"}, {"col2","$2"}]}, {order,["id"]}]}, Res),
+    ok.
