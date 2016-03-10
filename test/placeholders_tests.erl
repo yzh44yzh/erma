@@ -128,6 +128,18 @@ resolve_placeholders_test_() ->
             },
             {
                 %%
+                {select, [], "users", [{where, [{"name", {pl, "John"}}]}]},
+                %%
+                {{select, [], "users", [{where, [{"name", "$1"}]}]}, ["John"]}
+            },
+            {
+                %%
+                {select, [], "users", [{where, [{"name", {pl, "John"}}, {"age", gt, {pl, 18}}]}]},
+                %%
+                {{select, [], "users", [{where, [{"name", "$1"}, {"age", gt, "$2"}]}]}, ["John", 18]}
+            },
+            {
+                %%
                 {select, [], "users",
                     [{where, [{'or', [{'and', [{"last", {pl, <<"Silver">>}}, {"name", {pl, <<"John">>}}]},
                         {"email", {pl, "some@where.com"}},
@@ -160,8 +172,8 @@ resolve_placeholders_test_() ->
             },
             {
                 %%
-                {select, ["id", "username"], "user", [{offset, {pl, 10}, limit, {pl, 20}}]},
+                {select_distinct, ["id", "username"], "user", [{offset, {pl, 10}, limit, {pl, 20}}]},
                 %%
-                {{select, ["id", "username"], "user", [{offset, "$1", limit, "$2"}]}, [10, 20]}
+                {{select_distinct, ["id", "username"], "user", [{offset, "$1", limit, "$2"}]}, [10, 20]}
             }
         ]).

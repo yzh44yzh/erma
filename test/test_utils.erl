@@ -11,6 +11,8 @@ generate(Tests) ->
 generate({M, F}, Tests) ->
     {generator,
         fun() -> lists:map(
-            fun({Q, S}) -> ?_assertEqual(S, erlang:apply(M, F, [Q])) end,
+            fun({Query, WaitRes}) ->
+                Res = erlang:apply(M, F, [Query]),
+                ?_assertEqual(WaitRes, Res) end,
             Tests)
         end}.

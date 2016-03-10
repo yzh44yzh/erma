@@ -64,6 +64,7 @@ escape_char(mysql) -> "`".
 
 
 -spec prepare_value(value()) -> iolist().
+prepare_value({pl, _} = V) -> throw({not_resolved_placeholder, V});
 prepare_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
 prepare_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
 prepare_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
