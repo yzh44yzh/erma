@@ -5,7 +5,7 @@ clean:
 	rebar clean skip_deps=true
 	rm -f erl_crash.dump
 
-eunit:
+eunit: compile
 	rebar eunit skip_deps=true
 
 run:

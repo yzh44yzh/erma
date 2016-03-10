@@ -1,6 +1,6 @@
 -module(erma).
 
--export([build/1, build/2, append/2]).
+-export([build/1, build/2, append/2, resolve_placeholders/1]).
 -import(erma_utils, [prepare_table_name/2, prepare_name/2, prepare_value/1, prepare_limit/1]).
 -include("erma.hrl").
 
@@ -38,65 +38,6 @@ build({delete, Table, Entities}, Options) ->
     build_delete({Table, Entities}, Options).
 
 
--spec build_select(select_query(), erma_options()) -> sql().
-build_select({SelectType, Fields, Table, Entities}, #{database := Database}) ->
-    Select = case SelectType of
-                 select -> "SELECT ";
-                 select_distinct -> "SELECT DISTINCT "
-             end,
-    unicode:characters_to_binary([Select, build_fields(Fields, Database), " FROM ",
-                                  prepare_table_name(Table, Database),
-                                  build_joins(Table, Entities, Database),
-                                  build_where(Entities, Database),
-                                  build_group(Entities, Database),
-                                  build_having(Entities, Database),
-                                  build_order(Entities, Database),
-                                  build_limit(Entities)
-                                 ]).
-
-
--spec build_insert(insert_query(), erma_options()) -> sql().
-build_insert({Table, Names, Rows, Entities}, #{database := Database}) ->
-    Names2 = case Names of
-                [] -> [];
-                _ ->
-                    N1 = lists:map(
-                        fun(Name) ->
-                            prepare_name(Name, Database)
-                        end, Names),
-                     N2 = string:join(N1, ", "),
-                     [" (", N2, ")"]
-            end,
-    Rows2 = lists:map(fun(V1) ->
-                                V2 = lists:map(fun erma_utils:prepare_value/1, V1),
-                                ["(", string:join(V2, ", "), ")"]
-                        end, Rows),
-    Rows3 = string:join(Rows2, ", "),
-    unicode:characters_to_binary(["INSERT INTO ",
-                                  prepare_table_name(Table, Database),
-                                  Names2, " VALUES ", Rows3,
-                                  build_returning(Entities, Database)]).
-
-
--spec build_update(update_query(), erma_options()) -> sql().
-build_update({Table, KV, Entities}, #{database := Database}) ->
-    Values = lists:map(fun({K, V}) ->
-                               [prepare_name(K, Database), " = ", prepare_value(V)]
-                       end, KV),
-    Values2 = string:join(Values, ", "),
-    unicode:characters_to_binary(["UPDATE ", prepare_table_name(Table, Database),
-                                  " SET ", Values2,
-                                  build_where(Entities, Database),
-                                  build_returning(Entities, Database)]).
-
-
--spec build_delete(delete_query(), erma_options()) -> sql().
-build_delete({Table, Entities}, #{database := Database}) ->
-    unicode:characters_to_binary(["DELETE FROM ", prepare_table_name(Table, Database),
-                                  build_where(Entities, Database),
-                                  build_returning(Entities, Database)]).
-
-
 -spec append(sql_query(), list()) -> sql_query().
 append({select, Fields, Table}, NewEntities) ->
     {select, Fields, Table, merge(NewEntities, [])};
@@ -117,7 +58,81 @@ append({delete, Table, Entities}, NewEntities) ->
 append(Query, _NewEntities) -> Query.
 
 
+-spec resolve_placeholders(sql_query()) -> {sql_query(), list()}.
+resolve_placeholders({insert, Table, Names, Values}) ->
+    {Values2, Args} = resolve_list_of_values(Values),
+    {{insert, Table, Names, Values2}, Args};
+resolve_placeholders({insert, Table, Names, Values, Entities}) ->
+    {Values2, Args} = resolve_list_of_values(Values),
+    {{insert, Table, Names, Values2, Entities}, Args};
+resolve_placeholders({insert_rows, Table, Names, Values}) ->
+    {Values2, Args} = resolve_list_of_list_of_values(Values),
+    {{insert_rows, Table, Names, Values2}, Args};
+resolve_placeholders({insert_rows, Table, Names, Values, Entities}) ->
+    {Values2, Args} = resolve_list_of_list_of_values(Values),
+    {{insert_rows, Table, Names, Values2, Entities}, Args}.
+
+
 %%% inner functions
+
+-spec build_select(select_query(), erma_options()) -> sql().
+build_select({SelectType, Fields, Table, Entities}, #{database := Database}) ->
+    Select = case SelectType of
+                 select -> "SELECT ";
+                 select_distinct -> "SELECT DISTINCT "
+             end,
+    unicode:characters_to_binary([Select, build_fields(Fields, Database), " FROM ",
+        prepare_table_name(Table, Database),
+        build_joins(Table, Entities, Database),
+        build_where(Entities, Database),
+        build_group(Entities, Database),
+        build_having(Entities, Database),
+        build_order(Entities, Database),
+        build_limit(Entities)
+    ]).
+
+
+-spec build_insert(insert_query(), erma_options()) -> sql().
+build_insert({Table, Names, Rows, Entities}, #{database := Database}) ->
+    Names2 = case Names of
+                 [] -> [];
+                 _ ->
+                     N1 = lists:map(
+                         fun(Name) ->
+                             prepare_name(Name, Database)
+                         end, Names),
+                     N2 = string:join(N1, ", "),
+                     [" (", N2, ")"]
+             end,
+    Rows2 = lists:map(fun(V1) ->
+        V2 = lists:map(fun erma_utils:prepare_value/1, V1),
+        ["(", string:join(V2, ", "), ")"]
+                      end, Rows),
+    Rows3 = string:join(Rows2, ", "),
+    unicode:characters_to_binary(["INSERT INTO ",
+        prepare_table_name(Table, Database),
+        Names2, " VALUES ", Rows3,
+        build_returning(Entities, Database)]).
+
+
+-spec build_update(update_query(), erma_options()) -> sql().
+build_update({Table, KV, Entities}, #{database := Database}) ->
+    Values = lists:map(fun({K, V}) ->
+        [prepare_name(K, Database), " = ", prepare_value(V)]
+                       end, KV),
+    Values2 = string:join(Values, ", "),
+    unicode:characters_to_binary(["UPDATE ", prepare_table_name(Table, Database),
+        " SET ", Values2,
+        build_where(Entities, Database),
+        build_returning(Entities, Database)]).
+
+
+-spec build_delete(delete_query(), erma_options()) -> sql().
+build_delete({Table, Entities}, #{database := Database}) ->
+    unicode:characters_to_binary(["DELETE FROM ", prepare_table_name(Table, Database),
+        build_where(Entities, Database),
+        build_returning(Entities, Database)]).
+
 
 -spec build_fields([field()], database()) -> iolist().
 build_fields([], _) -> "*";
@@ -367,3 +382,37 @@ merge([{Tag, Props} | NewEntities], Acc) ->
 -spec delete_limit(list()) -> list().
 delete_limit(Entities) ->
     lists:keydelete(limit, 1, lists:keydelete(offset, 1, Entities)).
+
+
+-spec resolve_list_of_values([value()]) -> {[value()], list()}.
+resolve_list_of_values(Values) ->
+    resolve_list_of_values(Values, 1).
+
+
+-spec resolve_list_of_values([value()], integer()) -> {[value()], list()}.
+resolve_list_of_values(Values, InitialCount) ->
+    {Values2, Args, _Count} =
+        lists:foldl(
+            fun
+                ({pl, V}, {Vs, As, Count}) ->
+                    P = "$" ++ integer_to_list(Count),
+                    {[P | Vs], [V | As], Count + 1};
+                (V, {Vs, As, Count}) ->
+                    {[V | Vs], As, Count}
+            end,
+            {[], [], InitialCount}, Values),
+    {lists:reverse(Values2), lists:reverse(Args)}.
+
+
+-spec resolve_list_of_list_of_values([[value()]]) -> {[[value()]], list()}.
+resolve_list_of_list_of_values(LValues) ->
+    {LValues2, Args} =
+        lists:foldl(
+            fun(Values, {LValues, Args}) ->
+                {Values2, A} = resolve_list_of_values(Values, length(Args) + 1),
+                {[Values2 | LValues], Args ++ A}
+            end,
+            {[], []}, LValues),
+    {lists:reverse(LValues2), Args}.
+
+

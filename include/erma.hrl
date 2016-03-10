@@ -3,7 +3,8 @@
 -type value() :: boolean() | integer() | float() | string() | binary() |
                  {date, calendar:date()} |
                  {time, calendar:time()} |
-                 {datetime, calendar:datetime()}.
+                 {datetime, calendar:datetime()} |
+                 {pl, term()}. % placeholder
 
 -type select() :: select | select_distinct.
 
@@ -41,7 +42,7 @@
 
 -type having() :: {having, [where_condition()]}.
 
--type limit_value() :: non_neg_integer() | binary() | string().
+-type limit_value() :: non_neg_integer() | binary() | string() | {pl, term()}.
 
 -type limit() :: {limit, limit_value()} | {offset, limit_value(), limit, limit_value()}.
 
