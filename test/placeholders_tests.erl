@@ -177,3 +177,69 @@ resolve_placeholders_test_() ->
                 {{select_distinct, ["id", "username"], "user", [{offset, "$1", limit, "$2"}]}, [10, 20]}
             }
         ]).
+
+
+resolve_placeholders_for_mysql_test_() ->
+    test_utils:generate(
+        {erma, resolve_placeholders}, [#{database => mysql}],
+        [
+            {
+                %%
+                {insert, "users", ["first", <<"last">>, age], [123, {pl, 456}, {pl, 789}, 4242]},
+                %%
+                {{insert, "users", ["first", <<"last">>, age], [123, "?", "?", 4242]}, [456, 789]}
+            },
+            {
+                %%
+                {select, [], "users",
+                    [{where, [{'or', [{'and', [{"last", {pl, <<"Silver">>}}, {"name", {pl, <<"John">>}}]},
+                        {"email", {pl, "some@where.com"}},
+                        {"age", gt, {pl, 18}}]}]}
+                    ]},
+                %%
+                {{select, [], "users",
+                    [{where, [{'or', [{'and', [{"last", "?"}, {"name", "?"}]},
+                        {"email", "?"},
+                        {"age", gt, "?"}]}]}
+                    ]}, [<<"Silver">>, <<"John">>, "some@where.com",18]}
+            },
+            {
+                %%
+                {update, "users", [{"first", "Chris"}, {"last", {pl, "Pratt"}}], [{where, [{"id", {pl, 42}}]}]},
+                %%
+                {{update, "users", [{"first", "Chris"}, {"last", "?"}], [{where, [{"id", "?"}]}]}, ["Pratt", 42]}
+            }
+        ]).
+
+
+resolve_placeholders_for_postgresql_test_() ->
+    test_utils:generate(
+        {erma, resolve_placeholders}, [#{database => postgresql}],
+        [
+            {
+                %%
+                {insert, "users", ["first", <<"last">>, age], [123, {pl, 456}, {pl, 789}, 4242]},
+                %%
+                {{insert, "users", ["first", <<"last">>, age], [123, "$1", "$2", 4242]}, [456, 789]}
+            },
+            {
+                %%
+                {select, [], "users",
+                    [{where, [{'or', [{'and', [{"last", {pl, <<"Silver">>}}, {"name", {pl, <<"John">>}}]},
+                        {"email", {pl, "some@where.com"}},
+                        {"age", gt, {pl, 18}}]}]}
+                    ]},
+                %%
+                {{select, [], "users",
+                    [{where, [{'or', [{'and', [{"last", "$1"}, {"name", "$2"}]},
+                        {"email", "$3"},
+                        {"age", gt, "$4"}]}]}
+                    ]}, [<<"Silver">>, <<"John">>, "some@where.com",18]}
+            },
+            {
+                %%
+                {update, "users", [{"first", "Chris"}, {"last", {pl, "Pratt"}}], [{where, [{"id", {pl, 42}}]}]},
+                %%
+                {{update, "users", [{"first", "Chris"}, {"last", "$1"}], [{where, [{"id", "$2"}]}]}, ["Pratt", 42]}
+            }
+        ]).

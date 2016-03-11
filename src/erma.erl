@@ -1,6 +1,6 @@
 -module(erma).
 
--export([build/1, build/2, append/2, resolve_placeholders/1]).
+-export([build/1, build/2, append/2, resolve_placeholders/1, resolve_placeholders/2]).
 -import(erma_utils, [prepare_table_name/2, prepare_name/2, prepare_value/1, prepare_limit/1]).
 -include("erma.hrl").
 
@@ -421,17 +421,18 @@ delete_limit(Entities) ->
 
 
 -spec resolve_list_of_values([value()], map()) -> {[value()], list()}.
-resolve_list_of_values(Values, #{count := InitialCount}) ->
-    {Values2, Args, _Count} =
+resolve_list_of_values(Values, Options) ->
+    {Values2, Args, _} =
         lists:foldl(
             fun
-                ({pl, V}, {Vs, As, Count}) ->
-                    P = "$" ++ integer_to_list(Count), % TODO consider database type from options
-                    {[P | Vs], [V | As], Count + 1};
-                (V, {Vs, As, Count}) ->
-                    {[V | Vs], As, Count}
+                ({pl, V}, {Vs, As, #{count := C} = Op}) ->
+                    P = placeholder(Op),
+                    Op2 = Op#{count := (C + 1)},
+                    {[P | Vs], [V | As], Op2};
+                (V, {Vs, As, Op}) ->
+                    {[V | Vs], As, Op}
             end,
-            {[], [], InitialCount}, Values),
+            {[], [], Options}, Values),
     {lists:reverse(Values2), lists:reverse(Args)}.
 
 
@@ -504,7 +505,7 @@ resolve_where_condition({Key, Value}, Options) ->
 
 
 resolve_value({pl, V}, #{count := Count} = Options) ->
-    V2 = "$" ++ integer_to_list(Count), %% TODO consider db type
+    V2 = placeholder(Options),
     {V2, [V], Options#{count := (Count + 1)}};
 resolve_value(V, Options) -> {V, [], Options}.
 
@@ -537,4 +538,11 @@ resolve_limit([Entity | Rest], Acc, Args, Options) ->
             resolve_limit(Rest, [{offset, Offset2, limit, Limit2} | Acc], Args ++ A2 ++ A3, C3);
         _ ->
             resolve_limit(Rest, [Entity | Acc], Args, Options)
+    end.
+
+
+placeholder(#{count := Count, database := Database}) ->
+    case Database of
+        mysql -> "?";
+        postgresql -> "$" ++ integer_to_list(Count)
     end.
