@@ -20,6 +20,7 @@ build({select_distinct, Fields, Table}, Options) ->
     build_select({select_distinct, Fields, Table, []}, Options);
 build({select_distinct, Fields, Table, Entities}, Options) ->
     build_select({select_distinct, Fields, Table, Entities}, Options);
+
 build({insert, Table, Names, Values}, Options) ->
     build_insert({Table, Names, [Values], []}, Options);
 build({insert, Table, Names, Values, Entities}, Options) ->
@@ -28,10 +29,12 @@ build({insert_rows, Table, Names, Rows}, Options) ->
     build_insert({Table, Names, Rows, []}, Options);
 build({insert_rows, Table, Names, Rows, Entities}, Options) ->
     build_insert({Table, Names, Rows, Entities}, Options);
+
 build({update, Table, KV}, Options) ->
     build_update({Table, KV, []}, Options);
 build({update, Table, KV, Entities}, Options) ->
     build_update({Table, KV, Entities}, Options);
+
 build({delete, Table}, Options) ->
     build_delete({Table, []}, Options);
 build({delete, Table, Entities}, Options) ->
@@ -43,14 +46,17 @@ append({select, Fields, Table}, NewEntities) ->
     {select, Fields, Table, merge(NewEntities, [])};
 append({select, Fields, Table, Entities}, NewEntities) ->
     {select, Fields, Table, merge(NewEntities, Entities)};
+
 append({select_distinct, Fields, Table}, NewEntities) ->
     {select_distinct, Fields, Table, merge(NewEntities, [])};
 append({select_distinct, Fields, Table, Entities}, NewEntities) ->
     {select_distinct, Fields, Table, merge(NewEntities, Entities)};
+
 append({update, Table, KV}, NewEntities) ->
     {update, Table, KV, merge(NewEntities, [])};
 append({update, Table, KV, Entities}, NewEntities) ->
     {update, Table, KV, merge(NewEntities, Entities)};
+
 append({delete, Table}, NewEntities) ->
     {delete, Table, merge(NewEntities, [])};
 append({delete, Table, Entities}, NewEntities) ->
@@ -59,34 +65,47 @@ append(Query, _NewEntities) -> Query.
 
 
 -spec resolve_placeholders(sql_query()) -> {sql_query(), list()}.
-resolve_placeholders({insert, Table, Names, Values}) ->
-    {Values2, Args} = resolve_list_of_values(Values),
-    {{insert, Table, Names, Values2}, Args};
-resolve_placeholders({insert, Table, Names, Values, Entities}) ->
-    {Values2, Args} = resolve_list_of_values(Values),
-    {{insert, Table, Names, Values2, Entities}, Args};
-resolve_placeholders({insert_rows, Table, Names, Values}) ->
-    {Values2, Args} = resolve_list_of_list_of_values(Values),
-    {{insert_rows, Table, Names, Values2}, Args};
-resolve_placeholders({insert_rows, Table, Names, Values, Entities}) ->
-    {Values2, Args} = resolve_list_of_list_of_values(Values),
-    {{insert_rows, Table, Names, Values2, Entities}, Args};
-resolve_placeholders({select, Fields, Table, Entities}) ->
-    {Entities2, Args2, Count} = resolve_where(Entities, 1),
-    {Entities3, Args3, _} = resolve_limit(Entities2, Count),
-    {{select, Fields, Table, Entities3}, Args2 ++ Args3};
-resolve_placeholders({select_distinct, Fields, Table, Entities}) ->
-    {Entities2, Args2, Count} = resolve_where(Entities, 1),
-    {Entities3, Args3, _} = resolve_limit(Entities2, Count),
-    {{select_distinct, Fields, Table, Entities3}, Args2 ++ Args3};
-resolve_placeholders({update, Table, KV, Entities}) ->
-    {KV2, Args1, Count} = resolve_key_values(KV, 1),
-    {Entities2, Args2, _} = resolve_where(Entities, Count),
-    {{update, Table, KV2, Entities2}, Args1 ++ Args2};
-resolve_placeholders({delete, Table, Entities}) ->
-    {Entities2, Args, _Count} = resolve_where(Entities, 1),
-    {{delete, Table, Entities2}, Args};
 resolve_placeholders(Query) ->
+    resolve_placeholders(Query, #{database => postgresql}).
+
+
+-spec resolve_placeholders(sql_query(), erma_options()) -> {sql_query(), list()}.
+resolve_placeholders({insert, Table, Names, Values}, Options) ->
+    {Values2, Args} = resolve_list_of_values(Values, Options#{count => 1}),
+    {{insert, Table, Names, Values2}, Args};
+
+resolve_placeholders({insert, Table, Names, Values, Entities}, Options) ->
+    {Values2, Args} = resolve_list_of_values(Values, Options#{count => 1}),
+    {{insert, Table, Names, Values2, Entities}, Args};
+
+resolve_placeholders({insert_rows, Table, Names, Values}, Options) ->
+    {Values2, Args} = resolve_list_of_list_of_values(Values, Options#{count => 1}),
+    {{insert_rows, Table, Names, Values2}, Args};
+
+resolve_placeholders({insert_rows, Table, Names, Values, Entities}, Options) ->
+    {Values2, Args} = resolve_list_of_list_of_values(Values, Options#{count => 1}),
+    {{insert_rows, Table, Names, Values2, Entities}, Args};
+
+resolve_placeholders({select, Fields, Table, Entities}, Options) ->
+    {Entities2, Args2, Options2} = resolve_where(Entities, Options#{count => 1}),
+    {Entities3, Args3, _} = resolve_limit(Entities2, Options2),
+    {{select, Fields, Table, Entities3}, Args2 ++ Args3};
+
+resolve_placeholders({select_distinct, Fields, Table, Entities}, Options) ->
+    {Entities2, Args2, Options2} = resolve_where(Entities, Options#{count => 1}),
+    {Entities3, Args3, _} = resolve_limit(Entities2, Options2),
+    {{select_distinct, Fields, Table, Entities3}, Args2 ++ Args3};
+
+resolve_placeholders({update, Table, KV, Entities}, Options) ->
+    {KV2, Args1, Options2} = resolve_key_values(KV, Options#{count => 1}),
+    {Entities2, Args2, _} = resolve_where(Entities, Options2),
+    {{update, Table, KV2, Entities2}, Args1 ++ Args2};
+
+resolve_placeholders({delete, Table, Entities}, Options) ->
+    {Entities2, Args, _} = resolve_where(Entities, Options#{count => 1}),
+    {{delete, Table, Entities2}, Args};
+
+resolve_placeholders(Query, _Options) ->
     {Query, []}.
 
 
@@ -401,18 +420,13 @@ delete_limit(Entities) ->
     lists:keydelete(limit, 1, lists:keydelete(offset, 1, Entities)).
 
 
--spec resolve_list_of_values([value()]) -> {[value()], list()}.
-resolve_list_of_values(Values) ->
-    resolve_list_of_values(Values, 1).
-
-
--spec resolve_list_of_values([value()], integer()) -> {[value()], list()}.
-resolve_list_of_values(Values, InitialCount) ->
+-spec resolve_list_of_values([value()], map()) -> {[value()], list()}.
+resolve_list_of_values(Values, #{count := InitialCount}) ->
     {Values2, Args, _Count} =
         lists:foldl(
             fun
                 ({pl, V}, {Vs, As, Count}) ->
-                    P = "$" ++ integer_to_list(Count),
+                    P = "$" ++ integer_to_list(Count), % TODO consider database type from options
                     {[P | Vs], [V | As], Count + 1};
                 (V, {Vs, As, Count}) ->
                     {[V | Vs], As, Count}
@@ -421,96 +435,106 @@ resolve_list_of_values(Values, InitialCount) ->
     {lists:reverse(Values2), lists:reverse(Args)}.
 
 
--spec resolve_list_of_list_of_values([[value()]]) -> {[[value()]], list()}.
-resolve_list_of_list_of_values(LValues) ->
+-spec resolve_list_of_list_of_values([[value()]], map()) -> {[[value()]], list()}.
+resolve_list_of_list_of_values(LValues, Options) ->
     {LValues2, Args} =
         lists:foldl(
             fun(Values, {LVs, As}) ->
-                {Values2, A} = resolve_list_of_values(Values, length(As) + 1),
+                Op = Options#{count := (length(As) + 1)},
+                {Values2, A} = resolve_list_of_values(Values, Op),
                 {[Values2 | LVs], As ++ A}
             end,
             {[], []}, LValues),
     {lists:reverse(LValues2), Args}.
 
 
--spec resolve_where(list(), integer()) -> {list(), list(), integer()}.
-resolve_where(Entities, Count) ->
+-spec resolve_where(list(), map()) -> {list(), list(), integer()}.
+resolve_where(Entities, Options) ->
     case lists:keyfind(where, 1, Entities) of
-        false -> {Entities, [], Count};
-        {where, []} -> {Entities, [], Count};
+        false -> {Entities, [], Options};
+        {where, []} -> {Entities, [], Options};
         {where, WConditions} ->
-            {WConditions2, Args, Count2} = resolve_where_condition_list(WConditions, Count),
+            {WConditions2, Args, Options2} = resolve_where_condition_list(WConditions, Options),
             Entities2 = [{where, WConditions2} | lists:keydelete(where, 1, Entities)],
-            {Entities2, Args, Count2}
+            {Entities2, Args, Options2}
     end.
 
 
-resolve_where_condition_list(WConditions, Count) ->
-    {WConditions2, Args, Count2} =
+resolve_where_condition_list(WConditions, Options) ->
+    {WConditions2, Args, Options2} =
         lists:foldl(
-            fun(WC, {WCs, Args, C}) ->
-                {WC2, A, C2} = resolve_where_condition(WC, C),
-                {[WC2 | WCs], Args ++ A, C2}
+            fun(WC, {WCs, Args, O}) ->
+                {WC2, A, O2} = resolve_where_condition(WC, O),
+                {[WC2 | WCs], Args ++ A, O2}
             end,
-            {[], [], Count},
+            {[], [], Options},
             WConditions),
-    {lists:reverse(WConditions2), Args, Count2}.
+    {lists:reverse(WConditions2), Args, Options2}.
 
 
-resolve_where_condition({'not', WC}, Count) ->
-    {WC2, Args, Count2} = resolve_where_condition(WC, Count),
-    {{'not', WC2}, Args, Count2};
-resolve_where_condition({Operator, WCs}, Count) when is_atom(Operator) andalso is_list(WCs) ->
-    {WCs2, Args, Count2} = resolve_where_condition_list(WCs, Count),
-    {{Operator, WCs2}, Args, Count2};
-resolve_where_condition({Key, Operator, Value}, Count) when is_atom(Operator) ->
-    {Value2, Args, Count2} = resolve_value(Value, Count),
-    {{Key, Operator, Value2}, Args, Count2};
-resolve_where_condition({Key, Operator, Values}, Count)
+resolve_where_condition({'not', WC}, Options) ->
+    {WC2, Args, Options2} = resolve_where_condition(WC, Options),
+    {{'not', WC2}, Args, Options2};
+
+resolve_where_condition({Operator, WCs}, Options) when is_atom(Operator) andalso is_list(WCs) ->
+    {WCs2, Args, Options2} = resolve_where_condition_list(WCs, Options),
+    {{Operator, WCs2}, Args, Options2};
+
+resolve_where_condition({Key, Operator, Values}, Options)
     when (Operator == 'in' orelse Operator == 'not_in') andalso is_list(Values) ->
     %% TODO implement
-    {{Key, Operator, Values}, [], Count};
-resolve_where_condition({_Key, _Operator, SubQuery}, _Count) when is_tuple(SubQuery) ->
+    {{Key, Operator, Values}, [], Options};
+
+resolve_where_condition({_Key, Operator, SubQuery}, _Options)
+    when (Operator == 'in' orelse Operator == 'not_in') andalso is_tuple(SubQuery) ->
     throw("resolving placeholders in subqueries is not implemented yet");
-resolve_where_condition({Key, between, Value1, Value2}, Count) ->
-    {Value11, Args1, Count1} = resolve_value(Value1, Count),
-    {Value22, Args2, Count2} = resolve_value(Value2, Count1),
-    {{Key, between, Value11, Value22}, Args1 ++ Args2, Count2};
-resolve_where_condition({Key, Value}, Count) ->
-    {Value2, Args, Count2} = resolve_value(Value, Count),
-    {{Key, Value2}, Args, Count2}.
+
+resolve_where_condition({Key, Operator, Value}, Options) when is_atom(Operator) ->
+    {Value2, Args, Options2} = resolve_value(Value, Options),
+    {{Key, Operator, Value2}, Args, Options2};
+
+resolve_where_condition({Key, between, Value1, Value2}, Options) ->
+    {Value11, Args1, Options1} = resolve_value(Value1, Options),
+    {Value22, Args2, Options2} = resolve_value(Value2, Options1),
+    {{Key, between, Value11, Value22}, Args1 ++ Args2, Options2};
+
+resolve_where_condition({Key, Value}, Options) ->
+    {Value2, Args, Options2} = resolve_value(Value, Options),
+    {{Key, Value2}, Args, Options2}.
 
 
-resolve_value({pl, V}, Count) -> {"$" ++ integer_to_list(Count), [V], Count + 1};
-resolve_value(V, Count) -> {V, [], Count}.
+resolve_value({pl, V}, #{count := Count} = Options) ->
+    V2 = "$" ++ integer_to_list(Count), %% TODO consider db type
+    {V2, [V], Options#{count := (Count + 1)}};
+resolve_value(V, Options) -> {V, [], Options}.
 
 
-resolve_key_values(KeyValues, Count) ->
-    {KeyValues2, Args, Count2} =
+resolve_key_values(KeyValues, Options) ->
+    {KeyValues2, Args, Options2} =
         lists:foldl(
             fun({K, V}, {KVs, A, C}) ->
                 {V2, A2, C2} = resolve_value(V, C),
                 {[{K, V2} | KVs], A ++ A2, C2}
             end,
-            {[], [], Count},
+            {[], [], Options},
             KeyValues),
-    {lists:reverse(KeyValues2), Args, Count2}.
+    {lists:reverse(KeyValues2), Args, Options2}.
 
 
-resolve_limit(Entities, Count) ->
-    resolve_limit(Entities, [], [], Count).
+resolve_limit(Entities, Options) ->
+    resolve_limit(Entities, [], [], Options).
 
 
-resolve_limit([], Acc, Args, Count) -> {lists:reverse(Acc), Args, Count};
-resolve_limit([Entity | Rest], Acc, Args, Count) ->
+resolve_limit([], Acc, Args, Options) -> {lists:reverse(Acc), Args, Options};
+resolve_limit([Entity | Rest], Acc, Args, Options) ->
     case Entity of
         {limit, Limit} ->
-            {Limit2, A2, C2} = resolve_value(Limit, Count),
+            {Limit2, A2, C2} = resolve_value(Limit, Options),
             resolve_limit(Rest, [{limit, Limit2} | Acc], Args ++ A2, C2);
         {offset, Offset, limit, Limit} ->
-            {Offset2, A2, C2} = resolve_value(Offset, Count),
+            {Offset2, A2, C2} = resolve_value(Offset, Options),
             {Limit2, A3, C3} = resolve_value(Limit, C2),
             resolve_limit(Rest, [{offset, Offset2, limit, Limit2} | Acc], Args ++ A2 ++ A3, C3);
         _ ->
-            resolve_limit(Rest, [Entity | Acc], Args, Count)
+            resolve_limit(Rest, [Entity | Acc], Args, Options)
     end.
