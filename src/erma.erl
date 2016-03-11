@@ -71,11 +71,11 @@ resolve_placeholders(Query) ->
 
 -spec resolve_placeholders(sql_query(), erma_options()) -> {sql_query(), list()}.
 resolve_placeholders({insert, Table, Names, Values}, Options) ->
-    {Values2, Args} = resolve_list_of_values(Values, Options#{count => 1}),
+    {Values2, Args, _} = resolve_list_of_values(Values, Options#{count => 1}),
     {{insert, Table, Names, Values2}, Args};
 
 resolve_placeholders({insert, Table, Names, Values, Entities}, Options) ->
-    {Values2, Args} = resolve_list_of_values(Values, Options#{count => 1}),
+    {Values2, Args, _} = resolve_list_of_values(Values, Options#{count => 1}),
     {{insert, Table, Names, Values2, Entities}, Args};
 
 resolve_placeholders({insert_rows, Table, Names, Values}, Options) ->
@@ -422,7 +422,7 @@ delete_limit(Entities) ->
 
 -spec resolve_list_of_values([value()], map()) -> {[value()], list()}.
 resolve_list_of_values(Values, Options) ->
-    {Values2, Args, _} =
+    {Values2, Args, Options2} =
         lists:foldl(
             fun
                 ({pl, V}, {Vs, As, #{count := C} = Op}) ->
@@ -433,7 +433,7 @@ resolve_list_of_values(Values, Options) ->
                     {[V | Vs], As, Op}
             end,
             {[], [], Options}, Values),
-    {lists:reverse(Values2), lists:reverse(Args)}.
+    {lists:reverse(Values2), lists:reverse(Args), Options2}.
 
 
 -spec resolve_list_of_list_of_values([[value()]], map()) -> {[[value()]], list()}.
@@ -442,7 +442,7 @@ resolve_list_of_list_of_values(LValues, Options) ->
         lists:foldl(
             fun(Values, {LVs, As}) ->
                 Op = Options#{count := (length(As) + 1)},
-                {Values2, A} = resolve_list_of_values(Values, Op),
+                {Values2, A, _} = resolve_list_of_values(Values, Op),
                 {[Values2 | LVs], As ++ A}
             end,
             {[], []}, LValues),
@@ -483,8 +483,8 @@ resolve_where_condition({Operator, WCs}, Options) when is_atom(Operator) andalso
 
 resolve_where_condition({Key, Operator, Values}, Options)
     when (Operator == 'in' orelse Operator == 'not_in') andalso is_list(Values) ->
-    %% TODO implement
-    {{Key, Operator, Values}, [], Options};
+    {Values2, Args, Options2} = resolve_list_of_values(Values, Options),
+    {{Key, Operator, Values2}, Args, Options2};
 
 resolve_where_condition({_Key, Operator, SubQuery}, _Options)
     when (Operator == 'in' orelse Operator == 'not_in') andalso is_tuple(SubQuery) ->

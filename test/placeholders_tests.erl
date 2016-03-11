@@ -175,6 +175,24 @@ resolve_placeholders_test_() ->
                 {select_distinct, ["id", "username"], "user", [{offset, {pl, 10}, limit, {pl, 20}}]},
                 %%
                 {{select_distinct, ["id", "username"], "user", [{offset, "$1", limit, "$2"}]}, [10, 20]}
+            },
+            {
+                %%
+                {select, [], "users", [{where, [{"id", in, [1,2,3]}]}]},
+                %%
+                {{select, [], "users", [{where, [{"id", in, [1,2,3]}]}]}, []}
+            },
+            {
+                %%
+                {select, [], "users", [{where, [{"id", in, [{pl, 1}, {pl, 2}, {pl, 3}]}]}]},
+                %%
+                {{select, [], "users", [{where, [{"id", in, ["$1", "$2", "$3"]}]}]}, [1,2,3]}
+            },
+            {
+                %%
+                {select, [], "users", [{where, [{"id", in, ["a", {pl, "b"}, "c", {pl, "d"}]}]}]},
+                %%
+                {{select, [], "users", [{where, [{"id", in, ["a", "$1", "c", "$2"]}]}]}, ["b", "d"]}
             }
         ]).
 
@@ -243,3 +261,48 @@ resolve_placeholders_for_postgresql_test_() ->
                 {{update, "users", [{"first", "Chris"}, {"last", "$1"}], [{where, [{"id", "$2"}]}]}, ["Pratt", 42]}
             }
         ]).
+
+
+resolve_placeholders_for_complex_query_test() ->
+    Q = {select, ["id", "username"], "users",
+        [
+            {where, [
+                {'and', [
+                    {'or', [
+                        {'and', [
+                            {"last", {pl, <<"Silver">>}},
+                            {"name", {pl, <<"John">>}}
+                        ]},
+                        {"email", {pl, "some@where.com"}},
+                        {"age", gt, {pl, 18}}
+                    ]},
+                    {'not', {"age", lt, {pl, 80}}},
+                    {"id", 'in', [{pl, 1}, {pl, 2}, {pl, 3}]},
+                    {"level", between, {pl, 5}, {pl, 10}}
+                ]}
+            ]},
+            {order, ["created"]},
+            {offset, {pl, 0}, limit, {pl, 10}}
+        ]},
+    WaitRes = {{select, ["id", "username"], "users",
+        [
+            {where, [
+                {'and', [
+                    {'or', [
+                        {'and', [
+                            {"last", "$1"},
+                            {"name", "$2"}
+                        ]},
+                        {"email", "$3"},
+                        {"age", gt, "$4"}
+                    ]},
+                    {'not', {"age", lt, "$5"}},
+                    {"id", 'in', ["$6", "$7", "$8"]},
+                    {"level", between, "$9", "$10"}
+                ]}
+            ]},
+            {order, ["created"]},
+            {offset, "$11", limit, "$12"}
+        ]}, [<<"Silver">>, <<"John">>, "some@where.com", 18, 80, 1, 2, 3, 5, 10, 0, 10]},
+    ?assertEqual(WaitRes, erma:resolve_placeholders(Q)),
+    ok.
