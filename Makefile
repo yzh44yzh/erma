@@ -12,7 +12,7 @@ run:
 	erl +pc unicode -pa ebin
 
 d:
-	dialyzer --src src test \
+	dialyzer -I include --src src test \
 	| fgrep --invert-match --file .dialyzer.ignore
 
 etags:

@@ -22,23 +22,23 @@ build({select_distinct, Fields, Table, Entities}, Options) ->
     build_select({select_distinct, Fields, Table, Entities}, Options);
 
 build({insert, Table, Names, Values}, Options) ->
-    build_insert({Table, Names, [Values], []}, Options);
+    build_insert({insert_rows, Table, Names, [Values], []}, Options);
 build({insert, Table, Names, Values, Entities}, Options) ->
-    build_insert({Table, Names, [Values], Entities}, Options);
+    build_insert({insert_rows, Table, Names, [Values], Entities}, Options);
 build({insert_rows, Table, Names, Rows}, Options) ->
-    build_insert({Table, Names, Rows, []}, Options);
+    build_insert({insert_rows, Table, Names, Rows, []}, Options);
 build({insert_rows, Table, Names, Rows, Entities}, Options) ->
-    build_insert({Table, Names, Rows, Entities}, Options);
+    build_insert({insert_rows, Table, Names, Rows, Entities}, Options);
 
 build({update, Table, KV}, Options) ->
-    build_update({Table, KV, []}, Options);
+    build_update({update, Table, KV, []}, Options);
 build({update, Table, KV, Entities}, Options) ->
-    build_update({Table, KV, Entities}, Options);
+    build_update({update, Table, KV, Entities}, Options);
 
 build({delete, Table}, Options) ->
-    build_delete({Table, []}, Options);
+    build_delete({delete, Table, []}, Options);
 build({delete, Table, Entities}, Options) ->
-    build_delete({Table, Entities}, Options).
+    build_delete({delete, Table, Entities}, Options).
 
 
 -spec append(sql_query(), list()) -> sql_query().
@@ -129,7 +129,7 @@ build_select({SelectType, Fields, Table, Entities}, #{database := Database}) ->
 
 
 -spec build_insert(insert_query(), erma_options()) -> sql().
-build_insert({Table, Names, Rows, Entities}, #{database := Database}) ->
+build_insert({_, Table, Names, Rows, Entities}, #{database := Database}) ->
     Names2 = case Names of
                  [] -> [];
                  _ ->
@@ -152,7 +152,7 @@ build_insert({Table, Names, Rows, Entities}, #{database := Database}) ->
 
 
 -spec build_update(update_query(), erma_options()) -> sql().
-build_update({Table, KV, Entities}, #{database := Database}) ->
+build_update({_, Table, KV, Entities}, #{database := Database}) ->
     Values = lists:map(fun({K, V}) ->
         [prepare_name(K, Database), " = ", prepare_value(V)]
                        end, KV),
@@ -164,7 +164,7 @@ build_update({Table, KV, Entities}, #{database := Database}) ->
 
 
 -spec build_delete(delete_query(), erma_options()) -> sql().
-build_delete({Table, Entities}, #{database := Database}) ->
+build_delete({_, Table, Entities}, #{database := Database}) ->
     unicode:characters_to_binary(["DELETE FROM ", prepare_table_name(Table, Database),
         build_where(Entities, Database),
         build_returning(Entities, Database)]).
@@ -322,6 +322,7 @@ build_where_condition({Key, Value}, Database) ->
     [prepare_name(Key, Database), " = ", build_where_value(Value)].
 
 
+-spec build_where_value(value() | select_query()) -> iolist().
 build_where_value({select, _, _} = Query) -> ["(", build(Query), ")"];
 build_where_value({select, _, _, _} = Query) -> ["(", build(Query), ")"];
 build_where_value({select_distinct, _, _} = Query) -> ["(", build(Query), ")"];
@@ -420,7 +421,7 @@ delete_limit(Entities) ->
     lists:keydelete(limit, 1, lists:keydelete(offset, 1, Entities)).
 
 
--spec resolve_list_of_values([value()], map()) -> {[value()], list()}.
+-spec resolve_list_of_values([value()], map()) -> {[value()], list(), map()}.
 resolve_list_of_values(Values, Options) ->
     {Values2, Args, Options2} =
         lists:foldl(
@@ -449,7 +450,7 @@ resolve_list_of_list_of_values(LValues, Options) ->
     {lists:reverse(LValues2), Args}.
 
 
--spec resolve_where(list(), map()) -> {list(), list(), integer()}.
+-spec resolve_where(list(), map()) -> {list(), list(), map()}.
 resolve_where(Entities, Options) ->
     case lists:keyfind(where, 1, Entities) of
         false -> {Entities, [], Options};
@@ -461,6 +462,7 @@ resolve_where(Entities, Options) ->
     end.
 
 
+-spec resolve_where_condition_list(list(), map()) -> {list(), list(), map()}.
 resolve_where_condition_list(WConditions, Options) ->
     {WConditions2, Args, Options2} =
         lists:foldl(
@@ -473,6 +475,7 @@ resolve_where_condition_list(WConditions, Options) ->
     {lists:reverse(WConditions2), Args, Options2}.
 
 
+-spec resolve_where_condition(where_condition(), map()) -> {where_condition(), list(), map()}.
 resolve_where_condition({'not', WC}, Options) ->
     {WC2, Args, Options2} = resolve_where_condition(WC, Options),
     {{'not', WC2}, Args, Options2};
@@ -504,12 +507,14 @@ resolve_where_condition({Key, Value}, Options) ->
     {{Key, Value2}, Args, Options2}.
 
 
+-spec resolve_value(value(), map()) -> {value, list(), map()}.
 resolve_value({pl, V}, #{count := Count} = Options) ->
     V2 = placeholder(Options),
     {V2, [V], Options#{count := (Count + 1)}};
 resolve_value(V, Options) -> {V, [], Options}.
 
 
+-spec resolve_key_values(list(), map()) -> {list(), list(), map()}.
 resolve_key_values(KeyValues, Options) ->
     {KeyValues2, Args, Options2} =
         lists:foldl(
@@ -522,10 +527,12 @@ resolve_key_values(KeyValues, Options) ->
     {lists:reverse(KeyValues2), Args, Options2}.
 
 
+-spec resolve_limit(list(), map()) -> {list(), list(), map()}.
 resolve_limit(Entities, Options) ->
     resolve_limit(Entities, [], [], Options).
 
 
+-spec resolve_limit(list(), list(), list(), map()) -> {list(), list(), map()}.
 resolve_limit([], Acc, Args, Options) -> {lists:reverse(Acc), Args, Options};
 resolve_limit([Entity | Rest], Acc, Args, Options) ->
     case Entity of
@@ -541,6 +548,7 @@ resolve_limit([Entity | Rest], Acc, Args, Options) ->
     end.
 
 
+-spec placeholder(map()) -> iolist().
 placeholder(#{count := Count, database := Database}) ->
     case Database of
         mysql -> "?";
