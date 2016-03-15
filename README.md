@@ -8,9 +8,7 @@ Erma is a DSL language to describe and generate SQL queries.
 Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
 
 
-## Samples
-
-### SELECT
+## SELECT
 
 ```erlang
     Q1 = {select, [], "user"},
@@ -34,7 +32,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
     ?assertEqual(S3, erma:build(Q3)),
 ```
 
-### INSERT
+## INSERT
 
 ```erlang
     Q1 = {insert, "users", ["first", "last", "age"], ["Bob", "Dou", 25]},
@@ -56,7 +54,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
     ?assertEqual(S3, erma:build(Q3)),
 ```
 
-### UPDATE
+## UPDATE
 
 ```erlang
     Q1 = {update, "users",
@@ -77,7 +75,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
     ?assertEqual(S3, erma:build(Q3)),
 ```
 
-### DELETE
+## DELETE
 
 ```erlang
     Q1 = {delete, "users", [{where, [{"id", 3}]}]},
@@ -89,7 +87,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
     ?assertEqual(S2, erma:build(Q2)),
 ```
 
-### Join tables
+## Join tables
 
 ```erlang
     Q1 = {select, ["email.email", "address.state", "account.name"], "user",
@@ -113,7 +111,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
     ?assertEqual(S2, erma:build(Q2)),
 ```
 
-### Compound where conditions
+## Compound where conditions
 
 ```erlang
     Q1 = {select, [], "post",
@@ -157,7 +155,7 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
     ?assertEqual(S3, erma:build(Q3)),
 ```
 
-### Append more joins and where conditions to query
+## Append more joins and where conditions to query
 
 ```erlang
     Q1 = {select, [], "post"},
@@ -184,5 +182,32 @@ Erma is not a db driver. Erma doesn't connect to db, doesn't send requests.
            "RIGHT JOIN account ON account.id = u.account_id">>,
     ?assertEqual(S5, erma:build(Q5)),
 ```
+
+## Resolve placeholders
+
+```erlang
+    Q1 = {select, [], "users", [{where, [{"name", {pl, "John"}}, {"age", gt, {pl, 18}}]}]},
+    Q2 = {select, [], "users", [{where, [{"name", "$1"}, {"age", gt, "$2"}]}]},
+    Args2 = ["John", 18],
+    ?assertEqual({Q2, Args2}, erma:resolve_placeholders(Q1)),
+
+    Q3 = {insert, "users", ["first", <<"last">>, age], [123, {pl, 456}, {pl, 789}, 4242]},
+    Q4 = {insert, "users", ["first", <<"last">>, age], [123, "$1", "$2", 4242]},
+    Args4 = [456, 789],
+    ?assertEqual({Q4, Args4}, erma:resolve_placeholders(Q3)),
+```
+
+## Options
+
+**erma:build/2** accept options as second argument.Currently the only option supported is _database_.
+
+```erlang
+    erma:build(Q, #{database => postgresql}),
+    erma:build(Q, #{database => mysql}),
+```
+
+Options affect field and table names escaping and value placeholders.
+Mysql uses apostrophes to escape names and _"?"_ as placehodlers.
+Postgresql uses single quotes to escape names and _"$1, $2, $3"_ symbols as placeholders.
 
 See [unit tests](test/) for more samples.
