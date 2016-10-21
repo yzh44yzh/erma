@@ -76,6 +76,7 @@ prepare_value([$$ | Rest] = Value) -> % postgresql placeholder
     end;
 prepare_value(Value) when is_integer(Value) -> integer_to_list(Value);
 prepare_value(Value) when is_float(Value) -> io_lib:format("~p", [Value]);
+prepare_value(Value) when is_boolean(Value) -> atom_to_list(Value);
 prepare_value(Value) when is_binary(Value) -> prepare_value(unicode:characters_to_list(Value));
 prepare_value(Value) when is_list(Value) -> ["'", Value, "'"].
 
