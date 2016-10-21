@@ -308,10 +308,27 @@ build_where_condition({Key, not_in, Values}, Database) when is_list(Values) ->
     [prepare_name(Key, Database), " NOT IN (", string:join(V, ", "), ")"];
 build_where_condition({Key, not_in, SubQuery}, Database) when is_tuple(SubQuery) ->
     [prepare_name(Key, Database), " NOT IN ", build_where_value(SubQuery)];
+build_where_condition({Key, is, Is}, Database) ->
+    build_is(prepare_name(Key, Database), Is, Database);
 build_where_condition({Key, between, Value1, Value2}, Database) ->
     [prepare_name(Key, Database), " BETWEEN ", build_where_value(Value1), " AND ", build_where_value(Value2)];
 build_where_condition({Key, Value}, Database) ->
     [prepare_name(Key, Database), " = ", build_where_value(Value)].
+
+build_is(PrepKey, null, _) ->
+    [PrepKey, " IS NULL"];
+build_is(PrepKey, not_null, _) ->
+    [PrepKey, " IS NOT NULL"];
+build_is(PrepKey, {distinct_from, Val}, postgresql) ->
+    %% use {not, {Key, is, {distinct_from, Val}}} as equivalent for `IS NOT DISTINCT FROM`
+    [PrepKey, " IS DISTINCT FROM ", build_where_value(Val)];
+build_is(PrepKey, {distinct_from, Val}, mysql) ->
+    [PrepKey, " <=> ", build_where_value(Val)];
+build_is(PrepKey, Bool, _) ->
+    %% use {not, {Key, is, true}} as equivalent for `IS NOT TRUE`
+    [PrepKey, " IS ", build_where_value(Bool)].
+
+
 
 
 -spec build_where_value(value() | select_query()) -> iolist().

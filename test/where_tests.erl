@@ -160,5 +160,15 @@ where_test_() ->
          {select, [], "test", [{where, [{"id", between, 1, 10}]}]},
          %%
          <<"SELECT * FROM test WHERE id BETWEEN 1 AND 10">>
+       },
+       {
+         %%
+         {select, [], "test", [{where, [{"id", is, not_null},
+                                        {"col1", is, null},
+                                        {"col2", is, {distinct_from, "wasd"}},
+                                        {"col3", is, true}]}]},
+         %%
+         <<"SELECT * FROM test WHERE id IS NOT NULL AND col1 IS NULL "
+           "AND col2 IS DISTINCT FROM 'wasd' AND col3 IS true">>
        }
       ]).
