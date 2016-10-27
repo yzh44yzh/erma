@@ -141,6 +141,14 @@ where_test() ->
            "AND (NOT (user_id = 20 OR user_id = 30)) ",
            "AND \"state\" IN ('active', 'suspended', 'unknown')">>,
     ?assertEqual(S3, erma:build(Q3)),
+
+    Q4 = {select,
+          [{raw, "CASE WHEN op = 'increment' THEN 1 ELSE -1 END"}],
+          "operations",
+          [{where, [{"amount", '<', {raw, "(SELECT avg(amount) FROM operations)"}}]}]},
+    S4 = <<"SELECT CASE WHEN op = 'increment' THEN 1 ELSE -1 END FROM operations "
+           "WHERE amount < (SELECT avg(amount) FROM operations)">>,
+    ?assertEqual(S4, erma:build(Q4)),
     ok.
 
 
