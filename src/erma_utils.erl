@@ -68,6 +68,7 @@ prepare_value({pl, _} = V) -> throw({not_resolved_placeholder, V});
 prepare_value({date, D}) -> ["'", erma_utils:format_date(D), "'"];
 prepare_value({time, T}) ->  ["'", erma_utils:format_time(T), "'"];
 prepare_value({datetime, DT}) ->  ["'", erma_utils:format_datetime(DT), "'"];
+prepare_value({raw, Raw}) ->  Raw;
 prepare_value("?") -> "?"; % mysql placeholder
 prepare_value([$$ | Rest] = Value) -> % postgresql placeholder
     case string:to_integer(Rest) of
