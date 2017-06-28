@@ -37,6 +37,7 @@ prepare_table_name(Name, Database) -> prepare_name(Name, Database).
 
 
 -spec prepare_name(name() | [name()], database()) -> iolist().
+prepare_name({raw, Raw}, Database) -> Raw;
 prepare_name(Name, Database) when is_atom(Name) -> prepare_name(atom_to_list(Name), Database);
 prepare_name(Name, Database) when is_binary(Name) -> prepare_name(unicode:characters_to_list(Name), Database);
 prepare_name(Name0, Database) ->
