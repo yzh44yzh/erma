@@ -4,7 +4,8 @@
     valid_name/1,
     prepare_table_name/2,
     prepare_name/2,
-    prepare_value/1,
+    prepare_function/3,
+    prepare_value/2,
     prepare_limit/1,
     format_date/1, format_time/1, format_datetime/1]).
 -include("erma.hrl").
@@ -37,7 +38,7 @@ prepare_table_name(Name, Database) -> prepare_name(Name, Database).
 
 
 -spec prepare_name(name() | [name()], database()) -> iolist().
-prepare_name({raw, Raw}, Database) -> Raw;
+prepare_name({raw, Raw}, _Database) -> Raw;
 prepare_name(Name, Database) when is_atom(Name) -> prepare_name(atom_to_list(Name), Database);
 prepare_name(Name, Database) when is_binary(Name) -> prepare_name(unicode:characters_to_list(Name), Database);
 prepare_name(Name0, Database) ->
@@ -59,10 +60,20 @@ prepare_name(Name0, Database) ->
         end).
 
 
+-spec prepare_function(name(), [value()], database()) -> iolist().
+prepare_function(Name, Arguments0, Database) ->
+    Arguments1 = lists:map(fun(Arg) -> prepare_argument(Arg, Database) end, Arguments0),
+    [prepare_name(Name, Database), "(", string:join(Arguments1, ", "), ")"].
+
+
 -spec escape_char(database()) -> iolist().
 escape_char(postgresql) -> "\"";
 escape_char(mysql) -> "`".
 
+
+-spec prepare_value(value(), database()) -> iolist().
+prepare_value({function, Name, Arguments}, Database) -> prepare_function(Name, Arguments, Database);
+prepare_value(Value, _Database) -> prepare_value(Value).
 
 -spec prepare_value(value()) -> iolist().
 prepare_value({pl, _} = V) -> throw({not_resolved_placeholder, V});
@@ -108,6 +119,11 @@ format_datetime({Date, Time}) ->
 
 
 %%% inner functions
+
+prepare_argument({function, Name, Arguments}, Database) ->
+    prepare_function(Name, Arguments, Database);
+prepare_argument(Argument, _) when is_list(Argument) -> Argument;   % column name
+prepare_argument(Argument, _) -> prepare_value(Argument).
 
 -spec add_zero(integer()) -> string().
 add_zero(Num) when Num > 9 -> integer_to_list(Num);
