@@ -50,5 +50,11 @@ insert_test_() ->
          {insert_rows, "users", [], [[1, "Bob", "Dou", 25], [2, "Bill", "Foo", 31]]},
          %%
          <<"INSERT INTO users VALUES (1, 'Bob', 'Dou', 25), (2, 'Bill', 'Foo', 31)">>
+       },
+       {
+         %%
+         {insert_rows, "users", [], [[1, "Bob", "Dou", {function, now, []}], [2, "Bill", "Foo", {function, now, []}]]},
+         %%
+         <<"INSERT INTO users VALUES (1, 'Bob', 'Dou', now()), (2, 'Bill', 'Foo', now())">>
        }
       ]).

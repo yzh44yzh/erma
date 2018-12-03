@@ -177,5 +177,71 @@ select_test_() ->
          <<"SELECT SUM(id) ",
            "FROM \"user\" ",
            "WHERE fname <> 'Bob'">>
+       },
+       {
+         %%
+         {select, [{sum, "id"}], user},
+         %%
+         <<"SELECT SUM(id) FROM \"user\"">>
+       },
+       {
+         %%
+         {select, [{sum, "id", as, "total"}], user},
+         %%
+         <<"SELECT SUM(id) AS total FROM \"user\"">>
+       },
+       {
+         %%
+         {select, [{function, now, []}], user},
+         %%
+         <<"SELECT now() FROM \"user\"">>
+       },
+       {
+         %%
+         {select, [{function, to_char, ["created_at", <<"HH24:MI:SS">>]}], user},
+         %%
+         <<"SELECT to_char(created_at, 'HH24:MI:SS') FROM \"user\"">>
+       },
+       {
+         %%
+         {select, [{function, age, [{function, now, []}, "created_at"]}], user},
+         %%
+         <<"SELECT age(now(), created_at) FROM \"user\"">>
+       },
+       {
+         %%
+         {select, ["id"], user,
+           [{where, [{"created_at", '<', {function, now, []}}]}]},
+         %%
+         <<"SELECT id ",
+           "FROM \"user\" ",
+           "WHERE created_at < now()">>
+       },
+       {
+         %%
+         {select, ["id"], user,
+           [{where, [{{function, calculate_rating, ["created_at", "score"]}, '>', 100}]}]},
+         %%
+         <<"SELECT id ",
+           "FROM \"user\" ",
+           "WHERE calculate_rating(created_at, score) > 100">>
+       },
+       {
+         %%
+         {select, ["id"], user,
+           [{where, [{{function, calculate_rating, [{function, now, []}, "score"]}, '>', 100}]}]},
+         %%
+         <<"SELECT id ",
+           "FROM \"user\" ",
+           "WHERE calculate_rating(now(), score) > 100">>
+       },
+       {
+         %%
+         {select, ["id"], user,
+           [{where, [{{function, calculate_rating, ["user.created_at", "user.score"]}, '>', 100}]}]},
+         %%
+         <<"SELECT id ",
+           "FROM \"user\" ",
+           "WHERE calculate_rating(user.created_at, user.score) > 100">>
        }
       ]).

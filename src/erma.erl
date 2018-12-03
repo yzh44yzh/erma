@@ -1,7 +1,9 @@
 -module(erma).
 
 -export([build/1, build/2, append/2, resolve_placeholders/1, resolve_placeholders/2]).
--import(erma_utils, [prepare_table_name/2, prepare_name/2, prepare_value/1, prepare_limit/1]).
+-import(erma_utils, [
+    prepare_table_name/2, prepare_name/2, prepare_value/2, prepare_limit/1, prepare_function/3
+]).
 -include("erma.hrl").
 
 
@@ -133,7 +135,7 @@ build_insert({_, Table, Names, Rows, Entities}, #{database := Database}) ->
                      [" (", N2, ")"]
              end,
     Rows2 = lists:map(fun(V1) ->
-        V2 = lists:map(fun erma_utils:prepare_value/1, V1),
+        V2 = lists:map(fun(Value) -> erma_utils:prepare_value(Value, Database) end, V1),
         ["(", string:join(V2, ", "), ")"]
                       end, Rows),
     Rows3 = string:join(Rows2, ", "),
@@ -146,7 +148,7 @@ build_insert({_, Table, Names, Rows, Entities}, #{database := Database}) ->
 -spec build_update(update_query(), erma_options()) -> sql().
 build_update({_, Table, KV, Entities}, #{database := Database}) ->
     Values = lists:map(fun({K, V}) ->
-        [prepare_name(K, Database), " = ", prepare_value(V)]
+        [prepare_name(K, Database), " = ", prepare_value(V, Database)]
                        end, KV),
     Values2 = string:join(Values, ", "),
     unicode:characters_to_binary(["UPDATE ", prepare_table_name(Table, Database),
@@ -174,6 +176,7 @@ build_fields(Fields, Database) ->
                            ({AggFun, Name}) ->
                                 [string:to_upper(atom_to_list(AggFun)),
                                  "(", prepare_name(Name, Database), ")"];
+                           ({function, Name, Arguments}) -> prepare_function(Name, Arguments, Database);
                            (Name) ->
                                 prepare_name(Name, Database)
                         end, Fields),
@@ -273,70 +276,77 @@ build_where_condition({'and', WConditions}, Database) ->
         _ -> ["(", string:join(W, " AND "), ")"]
     end;
 build_where_condition({Key, '=', Value}, Database) ->
-    [prepare_name(Key, Database), " = ", build_where_value(Value)];
+    [build_where_key(Key, Database), " = ", build_where_value(Value, Database)];
 build_where_condition({Key, '<>', Value}, Database) ->
-    [prepare_name(Key, Database), " <> ", build_where_value(Value)];
+    [build_where_key(Key, Database), " <> ", build_where_value(Value, Database)];
 build_where_condition({Key, '>', Value}, Database) ->
-    [prepare_name(Key, Database), " > ", build_where_value(Value)];
+    [build_where_key(Key, Database), " > ", build_where_value(Value, Database)];
 build_where_condition({Key, gt, Value}, Database) ->
-    [prepare_name(Key, Database), " > ", build_where_value(Value)];
+    [build_where_key(Key, Database), " > ", build_where_value(Value, Database)];
 build_where_condition({Key, '<', Value}, Database) ->
-    [prepare_name(Key, Database), " < ", build_where_value(Value)];
+    [build_where_key(Key, Database), " < ", build_where_value(Value, Database)];
 build_where_condition({Key, lt, Value}, Database) ->
-    [prepare_name(Key, Database), " < ", build_where_value(Value)];
+    [build_where_key(Key, Database), " < ", build_where_value(Value, Database)];
 build_where_condition({Key, '>=', Value}, Database) ->
-    [prepare_name(Key, Database), " >= ", build_where_value(Value)];
+    [build_where_key(Key, Database), " >= ", build_where_value(Value, Database)];
 build_where_condition({Key, '<=', Value}, Database) ->
-    [prepare_name(Key, Database), " <= ", build_where_value(Value)];
+    [build_where_key(Key, Database), " <= ", build_where_value(Value, Database)];
 build_where_condition({Key, true}, Database) ->
-    [prepare_name(Key, Database), " = true"];
+    [build_where_key(Key, Database), " = true"];
 build_where_condition({Key, false}, Database) ->
-    [prepare_name(Key, Database), " = false"];
+    [build_where_key(Key, Database), " = false"];
 build_where_condition({Key, like, Value}, Database) when is_list(Value) ->
-    [prepare_name(Key, Database), " LIKE ", build_where_value(Value)];
+    [build_where_key(Key, Database), " LIKE ", build_where_value(Value, Database)];
 build_where_condition({Key, in, []}, Database) ->
-    [prepare_name(Key, Database), " IN (NULL)"];
+    [build_where_key(Key, Database), " IN (NULL)"];
 build_where_condition({Key, in, Values}, Database) when is_list(Values) ->
-    V = lists:map(fun build_where_value/1, Values),
-    [prepare_name(Key, Database), " IN (", string:join(V, ", "), ")"];
+    V = lists:map(fun(Value) -> build_where_value(Value, Database) end, Values),
+    [build_where_key(Key, Database), " IN (", string:join(V, ", "), ")"];
 build_where_condition({Key, in, SubQuery}, Database) when is_tuple(SubQuery) ->
-    [prepare_name(Key, Database), " IN ", build_where_value(SubQuery)];
+    [build_where_key(Key, Database), " IN ", build_where_value(SubQuery, Database)];
 build_where_condition({Key, not_in, []}, Database) ->
-    [prepare_name(Key, Database), " NOT IN (NULL)"];
+    [build_where_key(Key, Database), " NOT IN (NULL)"];
 build_where_condition({Key, not_in, Values}, Database) when is_list(Values) ->
-    V = lists:map(fun build_where_value/1, Values),
-    [prepare_name(Key, Database), " NOT IN (", string:join(V, ", "), ")"];
+    V = lists:map(fun(Value) -> build_where_value(Value, Database) end, Values),
+    [build_where_key(Key, Database), " NOT IN (", string:join(V, ", "), ")"];
 build_where_condition({Key, not_in, SubQuery}, Database) when is_tuple(SubQuery) ->
-    [prepare_name(Key, Database), " NOT IN ", build_where_value(SubQuery)];
+    [build_where_key(Key, Database), " NOT IN ", build_where_value(SubQuery, Database)];
 build_where_condition({Key, is, Is}, Database) ->
-    build_is(prepare_name(Key, Database), Is, Database);
+    build_is(build_where_key(Key, Database), Is, Database);
 build_where_condition({Key, between, Value1, Value2}, Database) ->
-    [prepare_name(Key, Database), " BETWEEN ", build_where_value(Value1), " AND ", build_where_value(Value2)];
+    [build_where_key(Key, Database), " BETWEEN ", build_where_value(Value1, Database), " AND ", build_where_value(Value2, Database)];
 build_where_condition({Key, Value}, Database) ->
-    [prepare_name(Key, Database), " = ", build_where_value(Value)].
+    [build_where_key(Key, Database), " = ", build_where_value(Value, Database)].
 
 build_is(PrepKey, null, _) ->
     [PrepKey, " IS NULL"];
 build_is(PrepKey, not_null, _) ->
     [PrepKey, " IS NOT NULL"];
-build_is(PrepKey, {distinct_from, Val}, postgresql) ->
+build_is(PrepKey, {distinct_from, Val}, postgresql=Database) ->
     %% use {not, {Key, is, {distinct_from, Val}}} as equivalent for `IS NOT DISTINCT FROM`
-    [PrepKey, " IS DISTINCT FROM ", build_where_value(Val)];
-build_is(PrepKey, {distinct_from, Val}, mysql) ->
-    [PrepKey, " <=> ", build_where_value(Val)];
-build_is(PrepKey, Bool, _) ->
+    [PrepKey, " IS DISTINCT FROM ", build_where_value(Val, Database)];
+build_is(PrepKey, {distinct_from, Val}, mysql=Database) ->
+    [PrepKey, " <=> ", build_where_value(Val, Database)];
+build_is(PrepKey, Bool, Database) ->
     %% use {not, {Key, is, true}} as equivalent for `IS NOT TRUE`
-    [PrepKey, " IS ", build_where_value(Bool)].
+    [PrepKey, " IS ", build_where_value(Bool, Database)].
 
 
+-spec build_where_key(where_key(), database()) -> iolist().
+build_where_key({function, Name, Arguments}, Database) -> prepare_function(Name, Arguments, Database);
+build_where_key(Key, Database) -> prepare_name(Key, Database).
 
 
--spec build_where_value(value() | select_query()) -> iolist().
-build_where_value({select, _, _} = Query) -> ["(", build(Query), ")"];
-build_where_value({select, _, _, _} = Query) -> ["(", build(Query), ")"];
-build_where_value({select_distinct, _, _} = Query) -> ["(", build(Query), ")"];
-build_where_value({select_distinct, _, _, _} = Query) -> ["(", build(Query), ")"];
-build_where_value(Value) -> prepare_value(Value).
+-spec build_where_value(where_value(), database()) -> iolist().
+build_where_value({select, _, _} = Query, Database) ->
+    ["(", build(Query, #{database => Database}), ")"];
+build_where_value({select, _, _, _} = Query, Database) ->
+    ["(", build(Query, #{database => Database}), ")"];
+build_where_value({select_distinct, _, _} = Query, Database) ->
+    ["(", build(Query, #{database => Database}), ")"];
+build_where_value({select_distinct, _, _, _} = Query, Database) ->
+    ["(", build(Query, #{database => Database}), ")"];
+build_where_value(Value, Database) -> prepare_value(Value, Database).
 
 
 -spec build_group(list(), database()) -> iolist().

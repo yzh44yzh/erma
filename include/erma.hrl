@@ -4,7 +4,8 @@
                  {date, calendar:date()} |
                  {time, calendar:time()} |
                  {datetime, calendar:datetime()} |
-                 {pl, term()}. % placeholder
+                 {pl, term()} | % placeholder
+                 function_call().
 
 -type select() :: select | select_distinct.
 
@@ -12,7 +13,12 @@
 
 -type agg_fun() :: atom().
 
--type field() :: name() | {name(), as, name()} | {raw, name()} | {agg_fun(), name()} | {agg_fun(), name(), as, name()}.
+-type field() :: name() |
+                 {name(), as, name()} |
+                 {raw, name()} |
+                 {agg_fun(), name()} |
+                 {agg_fun(), name(), as, name()} |
+                 function_call().
 
 -type joins() :: {joins, [join()]}.
 -type join() :: {join_type(), join_tables()} |
@@ -24,6 +30,8 @@
 -type where() :: {where, [where_condition()]}.
 
 -type where_action() :: '=' | '<>' | '<' | lt | '>' | gt | '>=' | '<=' | like.
+
+-type where_key() :: name() | function_call().
 
 -type where_value() :: value() | select_query().
 
@@ -47,6 +55,8 @@
 -type limit() :: {limit, limit_value()} | {offset, limit_value(), limit, limit_value()}.
 
 -type returning() :: {returning, id} | {returning, [name()]}.
+
+-type function_call() :: {function, name(), [value()]}.
 
 -type select_query() :: {select(), [field()], table_name()} |
                         {select(), [field()], table_name(),
