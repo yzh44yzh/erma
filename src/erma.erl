@@ -275,6 +275,8 @@ build_where_condition({'and', WConditions}, Database) ->
         [] -> [];
         _ -> ["(", string:join(W, " AND "), ")"]
     end;
+build_where_condition({function, Name, Arguments}, Database) ->
+    prepare_function(Name, Arguments, Database);
 build_where_condition({Key, '=', Value}, Database) ->
     [build_where_key(Key, Database), " = ", build_where_value(Value, Database)];
 build_where_condition({Key, '<>', Value}, Database) ->

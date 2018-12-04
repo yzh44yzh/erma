@@ -28,5 +28,11 @@ delete_test_() ->
          {delete, users, [{where, [{{function, calculate_rating, ["created_at", "score"]}, '>', 100}]}]},
          %%
          <<"DELETE FROM users WHERE calculate_rating(created_at, score) > 100">>
+       },
+       {
+         %%
+         {delete, users, [{where, [{function, isnull, ["name"]}]}]},
+         %%
+         <<"DELETE FROM users WHERE \"isnull\"(name)">>
        }
       ]).

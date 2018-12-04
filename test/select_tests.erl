@@ -243,5 +243,14 @@ select_test_() ->
          <<"SELECT id ",
            "FROM \"user\" ",
            "WHERE calculate_rating(user.created_at, user.score) > 100">>
+       },
+       {
+         %%
+         {select, ["id"], user,
+           [{where, [{function, isnull, ["name"]}]}]},
+         %%
+         <<"SELECT id ",
+           "FROM \"user\" ",
+           "WHERE \"isnull\"(name)">>
        }
       ]).
