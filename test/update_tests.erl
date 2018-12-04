@@ -67,5 +67,11 @@ update_test_() ->
          },
          %%
          <<"UPDATE users SET \"status\" = 2 WHERE calculate_rating(created_at, score) > 100">>
+       },
+       {
+         %%
+         {update, "users", [{"first", "Chris"}], [{where, [{function, isnull, ["first"]}]}]},
+         %%
+         <<"UPDATE users SET \"first\" = 'Chris' WHERE \"isnull\"(first)">>
        }
       ]).
