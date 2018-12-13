@@ -170,5 +170,20 @@ where_test_() ->
          %%
          <<"SELECT * FROM test WHERE id IS NOT NULL AND col1 IS NULL "
            "AND col2 IS DISTINCT FROM 'wasd' AND col3 IS true">>
+       },
+
+       %% tests for custom operators, see PostgreSQL manual for more examples:
+       %% https://www.postgresql.org/docs/10/functions-array.html
+       {
+         %%
+         {select, [], "test", [{where, [{"ids", '&&', "{1, 2, 3}" }]}]},
+         %%
+         <<"SELECT * FROM test WHERE ids&&'{1, 2, 3}'">>
+       },
+       {
+         %%
+         {select, [], "test", [{where, [{"ids", '||', 10 }]}]},
+         %%
+         <<"SELECT * FROM test WHERE ids||10">>
        }
       ]).
