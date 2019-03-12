@@ -125,10 +125,13 @@ prepare_argument({function, Name, Arguments}, Database) ->
 prepare_argument(Argument, _) when is_list(Argument) -> Argument;   % column name
 prepare_argument(Argument, _) -> prepare_value(Argument).
 
--spec add_zero(integer()) -> string().
-add_zero(Num) when Num > 9 -> integer_to_list(Num);
-add_zero(Num) -> [$0 | integer_to_list(Num)].
-
+-spec add_zero(number()) -> string().
+add_zero(Num) when is_integer(Num) andalso Num > 9 -> integer_to_list(Num);
+add_zero(Num) when is_integer(Num) -> [$0 | integer_to_list(Num)];
+add_zero(Num) when is_float(Num) andalso Num >= 10.0 ->
+    float_to_list(Num, [{decimals, 6}, compact]);
+add_zero(Num) when is_float(Num) ->
+    [$0 | float_to_list(Num, [{decimals, 6}, compact])].
 
 -spec valid_char(integer()) -> boolean().
 valid_char(Char) ->
