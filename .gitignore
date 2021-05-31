@@ -1,11 +1,4 @@
-TODO.org
-*.beam
-.eunit
-deps
-logs
-ebin
 TAGS
 .idea
-.rebar
-*.tmp
 *.iml
+_build

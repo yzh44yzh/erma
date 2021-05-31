@@ -1,12 +1,12 @@
 compile:
-	rebar compile skip_deps=true
+	rebar3 compile
 
 clean:
-	rebar clean skip_deps=true
+	rebar3 clean
 	rm -f erl_crash.dump
 
-eunit: compile
-	rebar eunit skip_deps=true
+eunit: 
+	rebar3 eunit
 
 run:
 	erl +pc unicode -pa ebin
