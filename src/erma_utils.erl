@@ -9,6 +9,7 @@
     prepare_limit/1,
     format_date/1, format_time/1, format_datetime/1]).
 -include("erma.hrl").
+-ignore_xref([valid_name/1]).
 
 
 %%% module API

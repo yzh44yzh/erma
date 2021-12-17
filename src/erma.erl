@@ -5,7 +5,7 @@
     prepare_table_name/2, prepare_name/2, prepare_value/2, prepare_limit/1, prepare_function/3
 ]).
 -include("erma.hrl").
-
+-ignore_xref([build/1, build/2, append/2, resolve_placeholders/1, resolve_placeholders/2]).
 
 %%% module API
 
@@ -77,7 +77,7 @@ resolve_placeholders(Query, Options) ->
     {Query2, lists:reverse(Params)}.
 
 
--spec resolve_placeholders(sql_query(), list(), erma_options()) -> {sql_query(), list()}.
+-spec resolve_placeholders(term(), list(), erma_options()) -> {sql_query(), list()}.
 resolve_placeholders({pl, Val}, Acc, #{database := Database}) ->
     Count = length(Acc) + 1,
     V2 = case Database of
