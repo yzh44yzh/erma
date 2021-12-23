@@ -2,7 +2,7 @@
 {application, erma,
  [
   {description, "SQL builder library"},
-  {vsn, "0.4"},
+  {vsn, git},
   {registered, []},
   {applications, [kernel, stdlib]},
   {env, []}

@@ -2,3 +2,5 @@ TAGS
 .idea
 *.iml
 _build
+doc
+rebar3

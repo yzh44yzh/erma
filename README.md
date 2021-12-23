@@ -1,4 +1,6 @@
 # Erma
+[![Build Status][gh badge]][gh]
+[![Erlang Versions][erlang version badge]][gh]
 
 Tasty SQL for Erlang
 
@@ -211,3 +213,8 @@ Mysql uses apostrophes to escape names and _"?"_ as placehodlers.
 Postgresql uses single quotes to escape names and _"$1, $2, $3"_ symbols as placeholders.
 
 See [unit tests](test/) for more samples.
+
+<!-- Badges -->
+[gh]: https://github.com/yzh44yzh/erma/actions/workflows/ci.yml
+[gh badge]: https://img.shields.io/github/workflow/status/yzh44yzh/erma/CI?style=flat-square
+[erlang version badge]: https://img.shields.io/badge/erlang-20.3%20to%2024.2-blue.svg?style=flat-square
