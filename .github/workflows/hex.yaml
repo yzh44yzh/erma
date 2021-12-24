@@ -1,0 +1,27 @@
+name: Publish to hex.pm
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  publish:
+    name: "Ubuntu"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        otp: [24.2]
+        rebar: [3.17.0]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{matrix.otp}}
+        rebar3-version: ${{matrix.rebar}}
+    - name: Publish to Hex.pm
+      env:
+        HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+      run: |
+           rebar3 edoc_extensions
+           rebar3 hex publish -r hexpm --yes
